@@ -6,7 +6,7 @@ const DIRECTOR = { nombre: "DR. EMMANUEL NÁJERA DE LEÓN", cargo: "DIRECTOR CES
 const SECRETARIO_ACADEMICO = { nombre: "MTRO. LIC. ENRIQUE PÉREZ LÓPEZ", cargo: "SECRETARIO ACADÉMICO" };
 const RECTORA = { nombre: "ARQUEOL. JUANA DE DIOS LÓPEZ JIMÉNEZ", cargo: "RECTORA" };
 
-// --- UTILIDADES SEGURAS ---
+// --- UTILIDADES ---
 const numeroALetras = (amount) => {
   if (!amount || isNaN(amount)) return 'CERO PESOS 00/100 M.N.';
   const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
@@ -48,7 +48,6 @@ const convertirGrupo = (n, u, d, dv, c) => {
     return output.trim();
 };
 
-// Protección anti-crasheo de fechas
 const formatFechaLarga = (dateString) => {
     if (!dateString) return 'FECHA PENDIENTE';
     try {
@@ -81,7 +80,7 @@ const styles = StyleSheet.create({
     paddingBottom: 45, 
     paddingLeft: 30, 
     paddingRight: 30, 
-    fontSize: 8, // Sin decimales
+    fontSize: 8, 
     fontFamily: 'Helvetica',
   },
   background: { position: 'absolute', minWidth: '100%', minHeight: '100%', display: 'block', height: '100%', width: '100%', top: 0, left: 0, zIndex: -1 },
@@ -117,24 +116,25 @@ const styles = StyleSheet.create({
 
   legalText: { fontSize: 6, textAlign: 'justify', marginTop: 2, color: '#000', lineHeight: 1.2 }, 
   firmaConformidadContainer: { alignItems: 'center', marginTop: 12, marginBottom: 4 },
-  conformidadTitle: { fontSize: 7, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' }, 
+  conformidadTitle: { fontSize: 7, fontWeight: 'bold', textAlign: 'center' }, 
 
   finalDeclaration: { fontSize: 7, textAlign: 'center', marginTop: 4 } 
 });
 
 const ComisionPDF = ({ data }) => {
-  if (!data) return null; // Seguro general
+  if (!data) return null; 
 
   const isInternational = data.tipo_comision === 'Internacional';
-  const alturaMotivo = isInternational ? 40 : 90;
-  const alturaFirma = isInternational ? 40 : 55;
+  
+  const alturaFirma = isInternational ? 45 : 65;   
+  const alturaMotivo = isInternational ? 35 : 100; 
+  const espacioConformidad = isInternational ? 10 : 35; 
 
   const textoImporteLetras = numeroALetras(data.importe_total);
   const nombreComisionado = (data.comisionado || '').toUpperCase();
   const categoriaComisionado = (data.categoria || '').toUpperCase();
   const textoFechaLugar = `SAN CRISTOBAL DE LAS CASAS, CHIAPAS; ${formatFechaLarga(data.fecha_elaboracion)}`;
 
-  // Seguro al buscar coincidencias
   const nombreStr = String(data.comisionado || '').toLowerCase();
   const isDirectorTravelling = nombreStr.includes('emmanuel') || nombreStr.includes('nájera');
 
@@ -150,9 +150,10 @@ const ComisionPDF = ({ data }) => {
         <View style={styles.row}><View style={styles.col65}><Text style={styles.label}>CATEGORÍA:</Text><Text style={styles.value}>{categoriaComisionado}</Text></View><View style={styles.col35}><Text style={styles.label}>ADSCRIPCIÓN:</Text><Text style={styles.value}>CESMECA</Text></View></View>
         
         <View style={styles.row}>
-            <View style={{ ...styles.col100, minHeight: alturaMotivo }}> 
+            {/* 🔴 AQUÍ ESTÁ EL AJUSTE: justifyContent: 'flex-start' y paddingTop para pegarlo arriba */}
+            <View style={{ ...styles.col100, minHeight: alturaMotivo, justifyContent: 'flex-start', paddingTop: 4 }}> 
                 <Text style={styles.label}>MOTIVO DE LA COMISIÓN:</Text>
-                <Text style={{ ...styles.value, textAlign: 'justify' }}>{data.motivo || ''}</Text>
+                <Text style={{ ...styles.value, textAlign: 'justify', marginTop: 2 }}>{data.motivo || ''}</Text>
             </View>
         </View>
 
@@ -167,13 +168,15 @@ const ComisionPDF = ({ data }) => {
         <View style={styles.row}> <View style={styles.col100}><Text style={{fontSize: 7, fontWeight: 'bold'}}>DÍA Y HORA DE SALIDA:  <Text style={{fontWeight: 'normal', fontSize: 8}}>{date(data.fecha_inicio)} - {data.hora_salida || ''}</Text>    DÍA Y HORA DE REGRESO: <Text style={{fontWeight: 'normal', fontSize: 8}}>{date(data.fecha_fin)} - {data.hora_regreso || ''}</Text></Text></View></View>
         <View style={styles.row}><View style={styles.col100}><Text style={{fontSize: 7, fontWeight: 'bold'}}>MEDIO DE TRANSPORTE: <Text style={{fontWeight: 'normal', fontSize: 8}}>{data.medio_transporte || ''}</Text></Text></View></View>
         
-        {(data.vehiculo_marca || data.vehiculo_placas) && (
+        {/* Lógica del Vehículo (Ya está integrada, si hay datos se muestra, si no, se oculta) */}
+        {(data.vehiculo_marca || data.vehiculo_placas) ? (
             <View style={styles.row}>
                 <View style={styles.col40}><Text style={styles.label}>MARCA:</Text><Text style={styles.value}>{data.vehiculo_marca}</Text></View>
                 <View style={styles.col30}><Text style={styles.label}>MODELO:</Text><Text style={styles.value}>{data.vehiculo_modelo}</Text></View>
                 <View style={styles.col30Last}><Text style={styles.label}>PLACAS:</Text><Text style={styles.value}>{data.vehiculo_placas}</Text></View>
             </View>
-        )}
+        ) : null}
+        
         <View style={styles.row}><View style={styles.col100}><Text style={styles.label}>NOMBRE DEL ENCARGADO:</Text><Text style={styles.value}> </Text> </View></View>
         
         <View style={styles.row}>
@@ -184,12 +187,13 @@ const ComisionPDF = ({ data }) => {
                         {data.clave_programatica || ''}
                     </Text>
                 </View>
-                {parseFloat(data.importe_combustible) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>26111.- COMBUSTIBLE</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_combustible)}</Text></View></View>}
-                {parseFloat(data.importe_otros) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>39202.- OTROS IMPTOS. Y DERECHOS</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_otros)}</Text></View></View>}
-                {parseFloat(data.importe_pasajes_aereos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>37111.- PASAJES NACIONALES AÉREOS</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_pasajes_aereos)}</Text></View></View>}
-                {parseFloat(data.importe_pasajes) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>37211.- PASAJES NACIONALES TERRESTRES</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_pasajes)}</Text></View></View>}
-                {parseFloat(data.importe_viaticos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>37511.- VIÁTICOS NACIONALES</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_viaticos)}</Text></View></View>}
-                {parseFloat(data.importe_congresos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>38301.- CONGRESOS Y CONVENCIONES</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_congresos)}</Text></View></View>}
+
+                {(parseFloat(data.importe_combustible) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>26111.- COMBUSTIBLE</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_combustible)}</Text></View></View> : null}
+                {(parseFloat(data.importe_otros) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>39202.- OTROS IMPTOS. Y DERECHOS</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_otros)}</Text></View></View> : null}
+                {(parseFloat(data.importe_pasajes_aereos) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>37111.- PASAJES NACIONALES AÉREOS</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_pasajes_aereos)}</Text></View></View> : null}
+                {(parseFloat(data.importe_pasajes) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>37211.- PASAJES NACIONALES TERRESTRES</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_pasajes)}</Text></View></View> : null}
+                {(parseFloat(data.importe_viaticos) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>37511.- VIÁTICOS NACIONALES</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_viaticos)}</Text></View></View> : null}
+                {(parseFloat(data.importe_congresos) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>38301.- CONGRESOS Y CONVENCIONES</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_congresos)}</Text></View></View> : null}
                 
                 <View style={{ flexDirection: 'row', borderTopWidth: 1, borderColor: '#000', marginTop: 1, paddingTop: 2 }}>
                     <View style={styles.colGastoDesc}><Text style={{fontSize: 8, fontWeight: 'bold'}}>IMPORTE TOTAL:</Text></View>
@@ -268,16 +272,8 @@ const ComisionPDF = ({ data }) => {
                             <View style={styles.col50Last}>
                                 <View style={styles.signatureBlock}>
                                     <View style={styles.signatureLine}></View>
-                                    {isDirectorTravelling ? (
-                                        <Text style={styles.signatureName}>{SECRETARIO_ACADEMICO.nombre}</Text>
-                                    ) : (
-                                        <Text style={styles.signatureName}>{DIRECTOR.nombre}</Text>
-                                    )}
-                                    {isDirectorTravelling ? (
-                                        <Text style={styles.signatureRole}>{SECRETARIO_ACADEMICO.cargo}</Text>
-                                    ) : (
-                                        <Text style={styles.signatureRole}>{DIRECTOR.cargo}</Text>
-                                    )}
+                                    <Text style={styles.signatureName}>{isDirectorTravelling ? SECRETARIO_ACADEMICO.nombre : DIRECTOR.nombre}</Text>
+                                    <Text style={styles.signatureRole}>{isDirectorTravelling ? SECRETARIO_ACADEMICO.cargo : DIRECTOR.cargo}</Text>
                                 </View>
                             </View>
                     </View>
@@ -296,7 +292,7 @@ const ComisionPDF = ({ data }) => {
                         RECIBÍ: DE LA UNIVERSIDAD AUTÓNOMA DE CIENCIAS Y ARTES DE CHIAPAS LA CANTIDAD DE {money(data.importe_total)} <Text style={{fontWeight: 'bold'}}>{textoImporteLetras}</Text> POR EL (LOS) CONCEPTOS ANTES DESCRITOS, LOS CUALES DEBERÁN SER COMPROBADOS DE ACUERDO A LA FUENTE DE FINANCIAMIENTO O DEVUELTOS A MÁS TARDAR EL QUINTO DÍA POSTERIOR A LA CONCLUSIÓN DE LA COMISIÓN; DE NO CUMPLIRSE ESTA CONDICIÓN, DOY MI CONSENTIMIENTO Y AUTORIZACIÓN PARA QUE SE DESCUENTE EN LA NÓMINA DE SUELDOS MÁS PRÓXIMA O DE ALGUNA OTRA PERCEPCIÓN QUE ME CORRESPONDA (ARTÍCULO 33 DEL REGLAMENTO DE NORMAS Y TARIFAS PARA LA APLICACIÓN DE VIÁTICOS Y PASAJES DE LA UNICACH).
                     </Text>
                     <View style={styles.firmaConformidadContainer}>
-                        <Text style={styles.conformidadTitle}>FIRMA DE CONFORMIDAD</Text>
+                        <Text style={{ ...styles.conformidadTitle, marginBottom: espacioConformidad }}>FIRMA DE CONFORMIDAD</Text>
                         <View style={{ borderTopWidth: 1, borderColor: '#000', width: 220, alignItems: 'center' }}>
                             <Text style={{ fontSize: 7, marginTop: 2, fontWeight: 'bold' }}>{nombreComisionado}</Text>
                             <Text style={{ fontSize: 6, marginTop: 1 }}>{categoriaComisionado}</Text>
