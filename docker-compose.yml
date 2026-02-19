@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # 1. Base de Datos (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: comisiones_db_2026
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password_seguro_2026  # Cambia esto
+      POSTGRES_DB: comisiones_db
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    networks:
+      - internal-net
+
+  # 2. Backend (Node.js API)
+  api:
+    build: ./backend
+    container_name: comisiones_api_2026
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=admin
+      - DB_PASS=password_seguro_2026
+      - DB_NAME=comisiones_db
+      - PORT=5000
+    depends_on:
+      - db
+    networks:
+      - internal-net
+      - web
+
+  # 3. Frontend (React + Nginx)
+  web:
+    build: ./frontend
+    container_name: comisiones_web_2026
+    restart: always
+    depends_on:
+      - api
+    networks:
+      - web  # Conectado a Caddy
+
+networks:
+  internal-net:
+    driver: bridge
+  web:
+    external: true
