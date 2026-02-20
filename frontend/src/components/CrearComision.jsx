@@ -6,33 +6,16 @@ import Swal from 'sweetalert2';
 const CrearComision = () => {
   const navigate = useNavigate();
 
-  const CLAVES_PROGRAMATICAS = [
-    { label: "PYI001 - Dirección y Gestión", valor: "4008000 (0121) 2.06.PRDI101.PYI001" },
-    { label: "PYI029 - Investigación A", valor: "4008000 (0121) 2.06.PRDI1029.PYI029" },
-    { label: "PYI034 - Investigación B", valor: "4008000 (0121) 2.06.PRDI1034.PYI034" },
-    { label: "PYI002 - Docencia", valor: "4008000 (0121) 2.06.PRDI202.PYI002" },
-    { label: "PYI006 - Difusión Cultural", valor: "4008000 (0121) 2.06.PRDI506.PYI006" },
-    { label: "PYI014 - Vinculación", valor: "4008000 (0121) 2.06.PRDI614.PYI014" }
-  ];
+  const [catalogoPersonal, setCatalogoPersonal] = useState([]);
+  const [catalogoVehiculos, setCatalogoVehiculos] = useState([]);
+  const [catalogoClaves, setCatalogoClaves] = useState([]);
 
-  const CATALOGO_PERSONAL = [
-    { nombre: "Roberto Carlos Hoover Silvano", rfc: "HOSR760103LR7", categoria: "Técnico Académico", adscripcion: "CESMECA" },
-    { nombre: "Mtra. Yesenia", rfc: "YES123456ABC", categoria: "Investigador Titular A", adscripcion: "CESMECA" },
-    { nombre: "Dr. Emanuel Nájera de León", rfc: "NAJE800101XYZ", categoria: "Director de Centro", adscripcion: "Dirección CESMECA" },
-    { nombre: "Lic. Roberto Rico", rfc: "RIC654321000", categoria: "Administrativo", adscripcion: "Secretaría Administrativa" },
-    { nombre: "C.P. Paty Ballinas", rfc: "PAT987654000", categoria: "Contador", adscripcion: "Financieros" },
-    { nombre: "Mtra. Gabriela Castillejos", rfc: "GAB123456000", categoria: "Investigador Asociado", adscripcion: "CESMECA" }
-  ];
-
-  const CATALOGO_VEHICULOS = [
-    { label: "Chevrolet Colorado (CY-2995-H)", marca: "Chevrolet", modelo: "Colorado", placas: "CY-2995-H" },
-    { label: "Honda CRV (DNG-272-J)", marca: "Honda", modelo: "CRV", placas: "DNG-272-J" },
-    { label: "Toyota Yaris (DNG-273-J)", marca: "Toyota", modelo: "Yaris", placas: "DNG-273-J" }
-  ];
-  
   const [uiTransporte, setUiTransporte] = useState('Vehículo');
   const [clavesSeleccionadas, setClavesSeleccionadas] = useState([]);
   const [claveTemporal, setClaveTemporal] = useState("");
+
+  // 🔴 NUEVO ESTADO PARA CONTROLAR NUESTRA LISTA ELEGANTE
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const [showModalCuota, setShowModalCuota] = useState(false);
   const [calcDias, setCalcDias] = useState("");
@@ -53,6 +36,12 @@ const CrearComision = () => {
     importe_pasajes: 0, importe_congresos: 0, importe_viaticos: 0,          
     importe_total: 0, estatus: 'Borrador'
   });
+
+  useEffect(() => {
+    fetch('/api/personal').then(res => res.json()).then(data => setCatalogoPersonal(data)).catch(console.error);
+    fetch('/api/vehiculos').then(res => res.json()).then(data => setCatalogoVehiculos(data)).catch(console.error);
+    fetch('/api/claves').then(res => res.json()).then(data => setCatalogoClaves(data)).catch(console.error);
+  }, []);
 
   useEffect(() => {
     const total = (parseFloat(formData.importe_combustible) || 0) + 
@@ -77,9 +66,7 @@ const CrearComision = () => {
     }
   };
 
-  const eliminarClave = (claveAEliminar) => {
-    setClavesSeleccionadas(clavesSeleccionadas.filter(c => c !== claveAEliminar));
-  };
+  const eliminarClave = (claveAEliminar) => { setClavesSeleccionadas(clavesSeleccionadas.filter(c => c !== claveAEliminar)); };
 
   const handleTransporteUIChange = (e) => {
     const seleccion = e.target.value;
@@ -94,35 +81,33 @@ const CrearComision = () => {
   const handleVehiculoChange = (e) => {
       const index = e.target.value;
       if (index !== "") {
-          const vehiculo = CATALOGO_VEHICULOS[index];
+          const vehiculo = catalogoVehiculos[index];
           setFormData(prev => ({ ...prev, vehiculo_marca: vehiculo.marca, vehiculo_modelo: vehiculo.modelo, vehiculo_placas: vehiculo.placas }));
       }
   };
 
+  // Mantenemos esto por si pegan el nombre directamente
   const handleComisionadoChange = (e) => {
     const valor = e.target.value;
     let nuevosDatos = { ...formData, comisionado: valor };
-    const personalEncontrado = CATALOGO_PERSONAL.find(p => p.nombre === valor);
+    const personalEncontrado = catalogoPersonal.find(p => p.nombre.toLowerCase() === valor.toLowerCase());
     if (personalEncontrado) {
         nuevosDatos.rfc = personalEncontrado.rfc;
         nuevosDatos.categoria = personalEncontrado.categoria;
         nuevosDatos.adscripcion = personalEncontrado.adscripcion;
     }
     setFormData(nuevosDatos);
+    setShowDropdown(true);
   };
 
   const aplicarCalculadora = () => {
-      let lineas = [];
-      let total = 0;
+      let lineas = []; let total = 0;
       if(calcDias && calcMonto) {
-          const sum = parseFloat(calcDias) * parseFloat(calcMonto);
-          total += sum;
+          const sum = parseFloat(calcDias) * parseFloat(calcMonto); total += sum;
           lineas.push(`${calcDias} x ${new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(calcMonto)}`);
       }
       if(calcMedios && calcMontoMedio) {
-           const numMedios = parseInt(calcMedios);
-           const sum = numMedios * parseFloat(calcMontoMedio);
-           total += sum;
+           const numMedios = parseInt(calcMedios); const sum = numMedios * parseFloat(calcMontoMedio); total += sum;
            lineas.push(`${numMedios === 1 ? '½' : numMedios + ' medios'} x ${new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(calcMontoMedio)}`);
       }
       if(lineas.length > 0) {
@@ -206,14 +191,51 @@ const CrearComision = () => {
             <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
                 <h3 className="text-sm font-bold text-blue-800 uppercase mb-3 flex items-center gap-2"><UserCheck size={18}/> 1. Datos del Comisionado</h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-2">
+                    
+                    {/* 🔴 AQUÍ ESTÁ EL NUEVO DROPDOWN ELEGANTE */}
+                    <div className="md:col-span-2 relative">
                         <label className="block text-xs font-bold text-gray-700 mb-1">Nombre Completo</label>
-                        <input list="personal-list" name="comisionado" value={formData.comisionado} onChange={handleComisionadoChange} className="w-full p-2 border rounded border-blue-300 bg-white" placeholder="Buscar..." autoComplete="off" required />
-                        <datalist id="personal-list">{CATALOGO_PERSONAL.map((p, i) => (<option key={i} value={p.nombre} />))}</datalist>
+                        <input 
+                            type="text"
+                            name="comisionado" 
+                            value={formData.comisionado} 
+                            onChange={handleComisionadoChange} 
+                            onFocus={() => setShowDropdown(true)}
+                            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                            className="w-full p-2 border rounded border-blue-300 bg-white focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all" 
+                            placeholder="Escribe para buscar un trabajador..." 
+                            autoComplete="off" 
+                            required 
+                        />
+                        {showDropdown && (
+                            <ul className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-2xl max-h-60 overflow-y-auto">
+                                {catalogoPersonal
+                                    .filter(p => p.nombre.toLowerCase().includes((formData.comisionado || '').toLowerCase()))
+                                    .map((p, i) => (
+                                        <li 
+                                            key={i} 
+                                            onClick={() => {
+                                                setFormData(prev => ({
+                                                    ...prev, 
+                                                    comisionado: p.nombre, rfc: p.rfc, categoria: p.categoria, adscripcion: p.adscripcion
+                                                }));
+                                                setShowDropdown(false);
+                                            }}
+                                            className="p-3 cursor-pointer hover:bg-blue-100 text-sm font-bold text-gray-700 border-b border-gray-100 last:border-b-0 transition-colors"
+                                        >
+                                            {p.nombre}
+                                        </li>
+                                ))}
+                                {catalogoPersonal.filter(p => p.nombre.toLowerCase().includes((formData.comisionado || '').toLowerCase())).length === 0 && (
+                                    <li className="p-3 text-sm text-gray-500 italic text-center">No se encontraron resultados</li>
+                                )}
+                            </ul>
+                        )}
                     </div>
-                    <div><label className="block text-xs font-bold text-gray-700 mb-1">R.F.C.</label><input name="rfc" value={formData.rfc} onChange={handleChange} className="w-full p-2 border rounded" /></div>
-                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Categoría</label><input name="categoria" value={formData.categoria} onChange={handleChange} className="w-full p-2 border rounded" /></div>
-                    <div className="md:col-span-2"><label className="block text-xs font-bold text-gray-700 mb-1">Adscripción</label><input name="adscripcion" value={formData.adscripcion} onChange={handleChange} className="w-full p-2 border rounded" /></div>
+
+                    <div><label className="block text-xs font-bold text-gray-700 mb-1">R.F.C.</label><input name="rfc" value={formData.rfc} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
+                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Categoría</label><input name="categoria" value={formData.categoria} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
+                    <div className="md:col-span-2"><label className="block text-xs font-bold text-gray-700 mb-1">Adscripción</label><input name="adscripcion" value={formData.adscripcion} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
                 </div>
             </div>
 
@@ -251,13 +273,15 @@ const CrearComision = () => {
                                     <label className="block text-xs font-bold text-blue-800 mb-1">Vehículo Oficial CESMECA</label>
                                     <select onChange={handleVehiculoChange} className="w-full p-2 border border-blue-300 rounded bg-white text-sm">
                                         <option value="">-- Seleccionar --</option>
-                                        {CATALOGO_VEHICULOS.map((v, idx) => (<option key={idx} value={idx}>{v.label}</option>))}
+                                        {catalogoVehiculos.map((v, idx) => (
+                                            <option key={idx} value={idx}>{v.marca} {v.modelo} ({v.placas})</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded border border-gray-200">
-                                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Marca</label><input name="vehiculo_marca" value={formData.vehiculo_marca} onChange={handleChange} className="w-full p-2 border rounded text-sm" /></div>
-                                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Modelo</label><input name="vehiculo_modelo" value={formData.vehiculo_modelo} onChange={handleChange} className="w-full p-2 border rounded text-sm" /></div>
-                                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Placas</label><input name="vehiculo_placas" value={formData.vehiculo_placas} onChange={handleChange} className="w-full p-2 border rounded text-sm" /></div>
+                                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Marca</label><input name="vehiculo_marca" value={formData.vehiculo_marca} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
+                                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Modelo</label><input name="vehiculo_modelo" value={formData.vehiculo_modelo} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
+                                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Placas</label><input name="vehiculo_placas" value={formData.vehiculo_placas} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                 </div>
                             </div>
                         ) : (<div className="p-4 bg-gray-100 rounded text-center text-gray-500 text-xs italic border">No requiere datos de vehículo.</div>)}
@@ -282,7 +306,9 @@ const CrearComision = () => {
                     <div className="flex gap-2">
                         <select value={claveTemporal} onChange={(e) => setClaveTemporal(e.target.value)} className="w-full p-3 border border-orange-300 rounded bg-white text-gray-700 font-medium">
                             <option value="">-- Seleccione para agregar --</option>
-                            {CLAVES_PROGRAMATICAS.map((clave, index) => (<option key={index} value={clave.valor}>{clave.label} ({clave.valor})</option>))}
+                            {catalogoClaves.map((clave, index) => (
+                                <option key={index} value={clave.valor}>{clave.label} ({clave.valor})</option>
+                            ))}
                         </select>
                         <button type="button" onClick={agregarClave} className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded shadow flex items-center gap-2 font-bold transition-colors"><Plus size={20}/> Agregar</button>
                     </div>
@@ -300,12 +326,11 @@ const CrearComision = () => {
                     </div>
                 )}
                 
-                {/* 🔴 AQUÍ ESTÁ EL AJUSTE: ORDEN NUMÉRICO CORRECTO */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-orange-200">
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">26111 - Combustible</label><input type="number" step="0.01" name="importe_combustible" value={formData.importe_combustible} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">37111 - Pasajes Aéreos</label><input type="number" step="0.01" name="importe_pasajes_aereos" value={formData.importe_pasajes_aereos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">37211 - Pasajes Terrestres</label><input type="number" step="0.01" name="importe_pasajes" value={formData.importe_pasajes} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37511 - Viáticos (Monto Real Acordado)</label><input type="number" step="0.01" name="importe_viaticos" value={formData.importe_viaticos} onChange={handleChange} className="w-full pl-6 p-2 border rounded border-blue-400 bg-blue-50" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37511 - Viáticos (Monto Real Acordado)</label><input type="number" step="0.01" name="importe_viaticos" value={formData.importe_viaticos} onChange={handleChange} className="w-full pl-6 p-2 border rounded border-blue-400 bg-blue-50 focus:bg-white" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">38301 - Congresos y Conv.</label><input type="number" step="0.01" name="importe_congresos" value={formData.importe_congresos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">39202 - Otros Impuestos</label><input type="number" step="0.01" name="importe_otros" value={formData.importe_otros} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
                 </div>

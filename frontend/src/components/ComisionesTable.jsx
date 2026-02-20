@@ -1,142 +1,126 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Edit, FileText, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import ComisionPDF from './ComisionPDF';
+import { Plus, Eye, Edit, FileText, Search } from 'lucide-react';
 
 const ComisionesTable = () => {
-  const [comisiones, setComisiones] = useState([]);
+  const [ordenes, setOrdenes] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Carga inicial de datos desde el backend
     fetch('/api/ordenes')
       .then(res => res.json())
-      .then(data => setComisiones(data))
-      .catch(err => console.error("Error cargando datos:", err));
+      .then(data => setOrdenes(data))
+      .catch(err => console.error("Error al cargar órdenes:", err));
   }, []);
 
-  // Formateador de fechas para la tabla
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const userTimezoneOffset = date.getTimezoneOffset() * 60000;
-    const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
-    return adjustedDate.toLocaleDateString('es-MX', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: '2-digit' 
-    });
-  };
+  const ordenesFiltradas = ordenes.filter(o => 
+    o.comisionado?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    o.id?.toString().includes(busqueda)
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 font-sans text-gray-800">
-      
-      {/* Encabezado Institucional */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-900 mb-8 flex flex-col md:flex-row justify-between items-center">
-        <div>
-           <h1 className="text-xl font-bold text-blue-900 uppercase tracking-tight">Universidad de Ciencias y Artes de Chiapas</h1>
-           <h2 className="text-md text-gray-600 font-semibold">Centro de Estudios Superiores de México y Centroamérica</h2>
-           <p className="text-sm text-gray-500 mt-1 italic">Sistema de Gestión de Órdenes de Comisión 2026</p>
+    <div className="p-8 bg-gray-50 min-h-screen font-sans">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Encabezado Principal */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 bg-white p-6 rounded-xl shadow-sm border border-blue-100">
+          <div>
+            <h1 className="text-2xl font-black text-blue-900 uppercase tracking-tight">
+              UNICACH - CESMECA
+            </h1>
+            <p className="text-blue-700 font-bold text-sm">Control de Comisiones 2026</p>
+          </div>
+          <button 
+            onClick={() => navigate('/crear')}
+            className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-lg font-black shadow-lg transition-all active:scale-95"
+          >
+            <Plus size={20} /> Nueva Comisión
+          </button>
         </div>
-        <button 
-          onClick={() => navigate('/crear')} 
-          className="mt-4 md:mt-0 bg-blue-800 hover:bg-blue-900 text-white px-6 py-2 rounded-md shadow-md flex items-center gap-2 transition-all font-bold active:scale-95"
-        >
-          <Plus size={20} />
-          <span>Nueva Comisión</span>
-        </button>
-      </div>
 
-      {/* Tabla Principal */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-        <div className="overflow-x-auto">
+        {/* Buscador */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          <input 
+            type="text" 
+            placeholder="Buscar por comisionado o número de oficio..." 
+            className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </div>
+
+        {/* Tabla con todas las columnas restauradas */}
+        <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
-                <th className="p-4 font-black text-center border-r w-32">Nº Oficio</th>
-                <th className="p-4 font-black border-r">Comisionado</th>
-                <th className="p-4 font-black border-r">Destino</th>
-                <th className="p-4 font-black border-r">Periodo</th>
-                <th className="p-4 font-black text-center border-r">Estatus</th>
-                <th className="p-4 font-black text-center">Acciones</th>
+              <tr className="bg-gray-50 border-b border-gray-200 text-[10px] uppercase font-black text-gray-500 tracking-widest text-center">
+                <th className="px-6 py-4">Nº Oficio</th>
+                <th className="px-6 py-4 text-left">Comisionado</th>
+                <th className="px-6 py-4 text-left">Destino</th>
+                <th className="px-6 py-4">Periodo</th>
+                <th className="px-6 py-4">Estatus</th>
+                <th className="px-6 py-4">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
-              {comisiones.map((item) => (
-                <tr key={item.id} className="hover:bg-blue-50/50 transition-colors group">
-                  {/* Número de Oficio con Nomenclatura CESMECA */}
-                  <td className="p-4 text-center font-mono font-bold text-blue-900 border-r bg-gray-50/30">
-                    {item.id.toString().padStart(3, '0')}/CESMECA/2026
+            <tbody className="divide-y divide-gray-100 text-center">
+              {ordenesFiltradas.map((orden) => (
+                <tr key={orden.id} className="hover:bg-blue-50/50 transition-colors">
+                  <td className="px-6 py-4 font-bold text-blue-900 text-sm">
+                    {orden.id?.toString().padStart(3, '0')}/CESMECA/2026
                   </td>
-                  
-                  <td className="p-4 font-semibold text-gray-900 border-r">
-                    {item.comisionado}
+                  <td className="px-6 py-4 font-black text-gray-800 text-sm text-left">
+                    {orden.comisionado}
                   </td>
-                  
-                  <td className="p-4 text-gray-600 border-r">
-                    {item.lugar}
+                  <td className="px-6 py-4 text-gray-600 text-sm font-medium text-left">
+                    {orden.lugar}
                   </td>
-                  
-                  <td className="p-4 text-gray-600 border-r">
-                    <span className="whitespace-nowrap">{formatDate(item.fecha_inicio)}</span>
-                    {item.fecha_fin && item.fecha_fin !== item.fecha_inicio && (
-                      <span className="text-gray-400"> → {formatDate(item.fecha_fin)}</span>
-                    )}
+                  <td className="px-6 py-4 text-xs font-bold text-gray-500">
+                    {new Date(orden.fecha_inicio).toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'2-digit'})}
+                    {orden.fecha_fin && ` → ${new Date(orden.fecha_fin).toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'2-digit'})}`}
                   </td>
-                  
-                  <td className="p-4 text-center border-r">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border shadow-sm ${
-                      item.estatus === 'Autorizado' ? 'bg-green-100 text-green-700 border-green-200' :
-                      item.estatus === 'Pagado' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                      item.estatus === 'Pendiente' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                      'bg-gray-100 text-gray-600 border-gray-200'
-                    }`}>
-                      {item.estatus || 'Borrador'}
+                  <td className="px-6 py-4">
+                    <span className="px-3 py-1 rounded-full text-[9px] font-black bg-gray-100 text-gray-500 border border-gray-200 uppercase">
+                      {orden.estatus}
                     </span>
                   </td>
-
-                  <td className="p-4 flex justify-center gap-3">
-                    {/* Botón Ver Detalle (Ojo) */}
-                    <button 
-                      onClick={() => navigate(`/ver/${item.id}`)}
-                      className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all" 
-                      title="Ver Detalle HTML"
-                    >
-                      <Eye size={18} />
-                    </button>
-                    
-                    {/* Botón Editar (Lápiz) */}
-                    <button 
-                      onClick={() => navigate(`/editar/${item.id}`)}
-                      className="p-2 text-amber-600 hover:bg-amber-100 rounded-lg transition-all" 
-                      title="Editar Datos"
-                    >
-                      <Edit size={18} />
-                    </button>
-
-                    {/* Botón Descargar (PDF) */}
-                    <PDFDownloadLink 
-                      document={<ComisionPDF data={item} />} 
-                      fileName={`Comision_${item.id}_CESMECA.pdf`}
-                      className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all flex items-center justify-center"
-                      title="Descargar PDF Oficial"
-                    >
-                      {({ loading }) => (loading ? '...' : <FileText size={18} />)}
-                    </PDFDownloadLink>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center gap-3">
+                      {/* Ojo y PDF unificados al visor profesional */}
+                      <button 
+                        onClick={() => navigate(`/orden/${orden.id}`)} 
+                        className="text-blue-600 hover:bg-blue-100 p-1.5 rounded-md transition-colors"
+                        title="Ver Vista Previa"
+                      >
+                        <Eye size={18} />
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/editar/${orden.id}`)} 
+                        className="text-orange-500 hover:bg-orange-100 p-1.5 rounded-md transition-colors"
+                        title="Editar"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/orden/${orden.id}`)} 
+                        className="text-red-600 hover:bg-red-100 p-1.5 rounded-md transition-colors"
+                        title="Generar PDF"
+                      >
+                        <FileText size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
-              
-              {comisiones.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="p-12 text-center text-gray-400 italic">
-                    No se encontraron órdenes de comisión en la base de datos.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+          
+          {ordenesFiltradas.length === 0 && (
+            <div className="p-20 text-center">
+              <p className="text-gray-400 font-bold italic">No se encontraron registros.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -4,9 +4,11 @@ const cors = require('cors');
 const app = express();
 const port = 5000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// Configuración de la base de datos
 const pool = new Pool({
   user: process.env.DB_USER || 'admin',
   host: process.env.DB_HOST || 'db',
@@ -15,26 +17,80 @@ const pool = new Pool({
   port: 5432,
 });
 
+// Funciones auxiliares para limpieza de datos
 const limpiar = (valor) => (valor === '' || valor === undefined ? null : valor);
 const limpiarNumero = (valor) => (valor === '' || valor === undefined || isNaN(valor) ? 0 : valor);
 
+// --- RUTAS DE CATÁLOGOS ---
+
+app.get('/api/personal', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM personal ORDER BY nombre ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error al obtener personal');
+  }
+});
+
+app.get('/api/vehiculos', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM vehiculos ORDER BY marca, modelo ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error al obtener vehículos');
+  }
+});
+
+app.get('/api/claves', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM claves_programaticas ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error al obtener claves');
+  }
+});
+
+// --- RUTA DE AUTORIDADES (FIRMAS) ---
+app.get('/api/autoridades', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM autoridades ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error al obtener autoridades');
+  }
+});
+
+// --- RUTAS DE ÓRDENES DE COMISIÓN ---
+
+// Obtener todas
 app.get('/api/ordenes', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM ordenes ORDER BY id DESC');
     res.json(result.rows);
-  } catch (err) { console.error(err.message); res.status(500).send('Error'); }
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error al obtener órdenes');
+  }
 });
 
+// Obtener una específica
 app.get('/api/ordenes/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query('SELECT * FROM ordenes WHERE id = $1', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ error: "No encontrada" });
+    if (result.rows.length === 0) return res.status(404).json({ error: "Orden no encontrada" });
     res.json(result.rows[0]);
-  } catch (err) { console.error(err.message); res.status(500).send('Error'); }
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error al obtener la orden');
+  }
 });
 
-// CREAR (POST)
+// Crear nueva orden
 app.post('/api/ordenes', async (req, res) => {
   try {
     const { 
@@ -63,8 +119,7 @@ app.post('/api/ordenes', async (req, res) => {
       limpiar(tipo_comision), limpiar(comisionado), limpiar(rfc), limpiar(categoria), limpiar(adscripcion), lugar, limpiar(motivo),
       fecha_inicio, fecha_fin, limpiar(hora_salida), limpiar(hora_regreso),
       medio_transporte, limpiar(vehiculo_marca), limpiar(vehiculo_modelo), limpiar(vehiculo_placas),
-      limpiar(clave_programatica), 
-      limpiar(cuota_diaria), // <--- ¡AQUÍ ESTÁ LA MAGIA! AHORA ES TEXTO LIBRE
+      limpiar(clave_programatica), limpiar(cuota_diaria), 
       limpiarNumero(importe_combustible), limpiarNumero(importe_pasajes), 
       limpiarNumero(importe_pasajes_aereos), limpiarNumero(importe_congresos),
       limpiarNumero(importe_viaticos), limpiarNumero(importe_otros), 
@@ -74,10 +129,13 @@ app.post('/api/ordenes', async (req, res) => {
 
     const newOrden = await pool.query(query, values);
     res.json(newOrden.rows[0]);
-  } catch (err) { console.error(err.message); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Error al crear la orden" });
+  }
 });
 
-// ACTUALIZAR (PUT)
+// Actualizar orden existente
 app.put('/api/ordenes/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -106,8 +164,7 @@ app.put('/api/ordenes/:id', async (req, res) => {
       limpiar(tipo_comision), limpiar(comisionado), limpiar(rfc), limpiar(categoria), limpiar(adscripcion), lugar, limpiar(motivo),
       fecha_inicio, fecha_fin, limpiar(hora_salida), limpiar(hora_regreso),
       medio_transporte, limpiar(vehiculo_marca), limpiar(vehiculo_modelo), limpiar(vehiculo_placas),
-      limpiar(clave_programatica), 
-      limpiar(cuota_diaria), // <--- ¡AQUÍ TAMBIÉN! TEXTO LIBRE
+      limpiar(clave_programatica), limpiar(cuota_diaria), 
       limpiarNumero(importe_combustible), limpiarNumero(importe_pasajes), 
       limpiarNumero(importe_pasajes_aereos), limpiarNumero(importe_congresos),
       limpiarNumero(importe_viaticos), limpiarNumero(importe_otros), 
@@ -117,7 +174,12 @@ app.put('/api/ordenes/:id', async (req, res) => {
 
     const updateOrden = await pool.query(query, values);
     res.json(updateOrden.rows[0]);
-  } catch (err) { console.error(err.message); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Error al actualizar la orden" });
+  }
 });
 
-app.listen(port, () => { console.log(`API puerto ${port}`); });
+app.listen(port, () => {
+  console.log(`Servidor corriendo en el puerto ${port}`);
+});
