@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, FileText, Search } from 'lucide-react';
+import { Plus, Edit, FileText, Search, LogOut, User } from 'lucide-react';
 
-const ComisionesTable = () => {
+const ComisionesTable = ({ usuario, onLogout }) => {
   const [ordenes, setOrdenes] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const navigate = useNavigate();
@@ -31,12 +31,36 @@ const ComisionesTable = () => {
             </h1>
             <p className="text-blue-700 font-bold text-sm">Control de Comisiones 2026</p>
           </div>
-          <button 
-            onClick={() => navigate('/crear')}
-            className="flex items-center justify-center gap-2 w-full md:w-auto bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-lg font-black shadow-lg transition-all active:scale-95"
-          >
-            <Plus size={20} /> Nueva Comisión
-          </button>
+          
+          {/* Bloque de Usuario + Botón de Nueva Comisión */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+            
+            {/* Saludo y Cerrar Sesión (Solo se muestra si 'usuario' existe) */}
+            {usuario && (
+              <div className="flex items-center gap-3 bg-gray-100 px-4 py-2.5 rounded-lg w-full sm:w-auto justify-center border border-gray-200 shadow-sm">
+                <User size={18} className="text-blue-600" />
+                <div className="flex flex-col text-left">
+                  <span className="text-xs text-gray-500 font-bold leading-none">{usuario.rol}</span>
+                  <span className="text-sm text-gray-800 font-black leading-tight">{usuario.nombre}</span>
+                </div>
+                <div className="w-px h-6 bg-gray-300 mx-2"></div>
+                <button 
+                  onClick={onLogout} 
+                  className="text-gray-400 hover:text-red-600 transition-colors p-1" 
+                  title="Cerrar Sesión"
+                >
+                  <LogOut size={20} />
+                </button>
+              </div>
+            )}
+
+            <button 
+              onClick={() => navigate('/crear')}
+              className="flex items-center justify-center gap-2 w-full md:w-auto bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-lg font-black shadow-lg transition-all active:scale-95"
+            >
+              <Plus size={20} /> Nueva Comisión
+            </button>
+          </div>
         </div>
 
         {/* Buscador */}
@@ -61,7 +85,6 @@ const ComisionesTable = () => {
                   <th className="px-4 py-4 md:px-6 text-left">Comisionado</th>
                   <th className="px-4 py-4 md:px-6 text-left">Destino</th>
                   <th className="px-4 py-4 md:px-6">Periodo</th>
-                  {/* 🔴 Se eliminó la cabecera de Estatus */}
                   <th className="px-4 py-4 md:px-6">Acciones</th>
                 </tr>
               </thead>
@@ -81,7 +104,6 @@ const ComisionesTable = () => {
                       {new Date(orden.fecha_inicio).toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'2-digit'})}
                       {orden.fecha_fin && ` → ${new Date(orden.fecha_fin).toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'2-digit'})}`}
                     </td>
-                    {/* 🔴 Se eliminó la celda que contenía el "Borrador" */}
                     <td className="px-4 py-4 md:px-6">
                       <div className="flex justify-center gap-2 md:gap-3">
                         <button 
