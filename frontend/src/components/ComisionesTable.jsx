@@ -61,7 +61,7 @@ const ComisionesTable = () => {
                   <th className="px-4 py-4 md:px-6 text-left">Comisionado</th>
                   <th className="px-4 py-4 md:px-6 text-left">Destino</th>
                   <th className="px-4 py-4 md:px-6">Periodo</th>
-                  <th className="px-4 py-4 md:px-6">Estatus</th>
+                  {/* 🔴 Se eliminó la cabecera de Estatus */}
                   <th className="px-4 py-4 md:px-6">Acciones</th>
                 </tr>
               </thead>
@@ -81,11 +81,7 @@ const ComisionesTable = () => {
                       {new Date(orden.fecha_inicio).toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'2-digit'})}
                       {orden.fecha_fin && ` → ${new Date(orden.fecha_fin).toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'2-digit'})}`}
                     </td>
-                    <td className="px-4 py-4 md:px-6">
-                      <span className="px-2 md:px-3 py-1 rounded-full text-[8px] md:text-[9px] font-black bg-gray-100 text-gray-500 border border-gray-200 uppercase whitespace-nowrap">
-                        {orden.estatus}
-                      </span>
-                    </td>
+                    {/* 🔴 Se eliminó la celda que contenía el "Borrador" */}
                     <td className="px-4 py-4 md:px-6">
                       <div className="flex justify-center gap-2 md:gap-3">
                         <button 

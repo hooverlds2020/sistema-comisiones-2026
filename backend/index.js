@@ -180,6 +180,41 @@ app.put('/api/ordenes/:id', async (req, res) => {
   }
 });
 
+
+// --- RUTA DE LOGIN (AUTENTICACIÓN) ---
+
+// Usuarias autorizadas
+const USUARIAS_AUTORIZADAS = [
+  { username: 'jmolina', password: 'cesmeca2026', nombre: 'Jenny Molina', rol: 'Administradora' },
+  { username: 'pballinas', password: 'cesmeca2026', nombre: 'Patricia Ballinas', rol: 'Auxiliar' },
+  { username: 'pruiz', password: 'cesmeca2026', nombre: 'Patricia Ruiz', rol: 'Auxiliar' },
+  { username: 'dgordillo', password: 'cesmeca2026', nombre: 'Dora Gordillo', rol: 'Auxiliar' }
+];
+
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+
+  // Buscar si el usuario existe y la contraseña coincide
+  const usuario = USUARIAS_AUTORIZADAS.find(
+    u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
+  );
+
+  if (usuario) {
+    // Si es correcto, devolvemos los datos del usuario (sin la contraseña por seguridad)
+    res.json({
+      message: 'Login exitoso',
+      user: {
+        username: usuario.username,
+        nombre: usuario.nombre,
+        rol: usuario.rol
+      }
+    });
+  } else {
+    // Si falla, enviamos error 401 (No autorizado)
+    res.status(401).json({ message: 'Usuario o contraseña incorrectos.' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Servidor corriendo en el puerto ${port}`);
 });
