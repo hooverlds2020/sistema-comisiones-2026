@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, FileText, Search, LogOut, User } from 'lucide-react';
+import { Plus, Edit, FileText, Search } from 'lucide-react';
 
-const ComisionesTable = ({ usuario, onLogout }) => {
+const ComisionesTable = () => {
   const [ordenes, setOrdenes] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const navigate = useNavigate();
@@ -23,44 +23,21 @@ const ComisionesTable = ({ usuario, onLogout }) => {
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto">
         
-        {/* Encabezado Principal */}
+        {/* Encabezado del Módulo */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-white p-6 rounded-xl shadow-sm border border-blue-100">
           <div className="text-center md:text-left">
-            <h1 className="text-xl md:text-2xl font-black text-blue-900 uppercase tracking-tight">
-              UNICACH - CESMECA
+            <h1 className="text-xl md:text-2xl font-black text-blue-900 tracking-tight">
+              Gestión de Oficios
             </h1>
-            <p className="text-blue-700 font-bold text-sm">Control de Comisiones 2026</p>
+            <p className="text-gray-500 font-bold text-sm">Control y seguimiento de comisiones</p>
           </div>
           
-          {/* Bloque de Usuario + Botón de Nueva Comisión */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-            
-            {/* Saludo y Cerrar Sesión (Solo se muestra si 'usuario' existe) */}
-            {usuario && (
-              <div className="flex items-center gap-3 bg-gray-100 px-4 py-2.5 rounded-lg w-full sm:w-auto justify-center border border-gray-200 shadow-sm">
-                <User size={18} className="text-blue-600" />
-                <div className="flex flex-col text-left">
-                  <span className="text-xs text-gray-500 font-bold leading-none">{usuario.rol}</span>
-                  <span className="text-sm text-gray-800 font-black leading-tight">{usuario.nombre}</span>
-                </div>
-                <div className="w-px h-6 bg-gray-300 mx-2"></div>
-                <button 
-                  onClick={onLogout} 
-                  className="text-gray-400 hover:text-red-600 transition-colors p-1" 
-                  title="Cerrar Sesión"
-                >
-                  <LogOut size={20} />
-                </button>
-              </div>
-            )}
-
-            <button 
-              onClick={() => navigate('/crear')}
-              className="flex items-center justify-center gap-2 w-full md:w-auto bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-lg font-black shadow-lg transition-all active:scale-95"
-            >
-              <Plus size={20} /> Nueva Comisión
-            </button>
-          </div>
+          <button 
+            onClick={() => navigate('/crear')}
+            className="flex items-center justify-center gap-2 w-full md:w-auto bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-lg font-black shadow-lg transition-all active:scale-95"
+          >
+            <Plus size={20} /> Nueva Comisión
+          </button>
         </div>
 
         {/* Buscador */}
