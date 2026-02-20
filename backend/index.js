@@ -34,7 +34,7 @@ app.get('/api/ordenes/:id', async (req, res) => {
   } catch (err) { console.error(err.message); res.status(500).send('Error'); }
 });
 
-// CREAR (POST) - Con fecha_elaboracion
+// CREAR (POST)
 app.post('/api/ordenes', async (req, res) => {
   try {
     const { 
@@ -63,12 +63,13 @@ app.post('/api/ordenes', async (req, res) => {
       limpiar(tipo_comision), limpiar(comisionado), limpiar(rfc), limpiar(categoria), limpiar(adscripcion), lugar, limpiar(motivo),
       fecha_inicio, fecha_fin, limpiar(hora_salida), limpiar(hora_regreso),
       medio_transporte, limpiar(vehiculo_marca), limpiar(vehiculo_modelo), limpiar(vehiculo_placas),
-      limpiar(clave_programatica), limpiarNumero(cuota_diaria), 
+      limpiar(clave_programatica), 
+      limpiar(cuota_diaria), // <--- ¡AQUÍ ESTÁ LA MAGIA! AHORA ES TEXTO LIBRE
       limpiarNumero(importe_combustible), limpiarNumero(importe_pasajes), 
       limpiarNumero(importe_pasajes_aereos), limpiarNumero(importe_congresos),
       limpiarNumero(importe_viaticos), limpiarNumero(importe_otros), 
       limpiarNumero(importe_total), estatus || 'Borrador',
-      fecha_elaboracion || new Date() // Si no viene, pone hoy
+      fecha_elaboracion || new Date() 
     ];
 
     const newOrden = await pool.query(query, values);
@@ -76,7 +77,7 @@ app.post('/api/ordenes', async (req, res) => {
   } catch (err) { console.error(err.message); res.status(500).json({ error: err.message }); }
 });
 
-// ACTUALIZAR (PUT) - Con fecha_elaboracion
+// ACTUALIZAR (PUT)
 app.put('/api/ordenes/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -105,7 +106,8 @@ app.put('/api/ordenes/:id', async (req, res) => {
       limpiar(tipo_comision), limpiar(comisionado), limpiar(rfc), limpiar(categoria), limpiar(adscripcion), lugar, limpiar(motivo),
       fecha_inicio, fecha_fin, limpiar(hora_salida), limpiar(hora_regreso),
       medio_transporte, limpiar(vehiculo_marca), limpiar(vehiculo_modelo), limpiar(vehiculo_placas),
-      limpiar(clave_programatica), limpiarNumero(cuota_diaria), 
+      limpiar(clave_programatica), 
+      limpiar(cuota_diaria), // <--- ¡AQUÍ TAMBIÉN! TEXTO LIBRE
       limpiarNumero(importe_combustible), limpiarNumero(importe_pasajes), 
       limpiarNumero(importe_pasajes_aereos), limpiarNumero(importe_congresos),
       limpiarNumero(importe_viaticos), limpiarNumero(importe_otros), 

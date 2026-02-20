@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft, Briefcase, UserCheck, Globe, Calendar, Car, Bus, Plane, Plus, Trash2, Clock } from 'lucide-react';
+import { Save, ArrowLeft, Briefcase, UserCheck, Globe, Calendar, Car, Bus, Plane, Plus, Trash2, Calculator, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const CrearComision = () => {
   const navigate = useNavigate();
 
-  // --- 1. CATÁLOGOS ---
   const CLAVES_PROGRAMATICAS = [
     { label: "PYI001 - Dirección y Gestión", valor: "4008000 (0121) 2.06.PRDI101.PYI001" },
     { label: "PYI029 - Investigación A", valor: "4008000 (0121) 2.06.PRDI1029.PYI029" },
@@ -24,28 +23,37 @@ const CrearComision = () => {
     { nombre: "C.P. Paty Ballinas", rfc: "PAT987654000", categoria: "Contador", adscripcion: "Financieros" },
     { nombre: "Mtra. Gabriela Castillejos", rfc: "GAB123456000", categoria: "Investigador Asociado", adscripcion: "CESMECA" }
   ];
+
+  const CATALOGO_VEHICULOS = [
+    { label: "Chevrolet Colorado (CY-2995-H)", marca: "Chevrolet", modelo: "Colorado", placas: "CY-2995-H" },
+    { label: "Honda CRV (DNG-272-J)", marca: "Honda", modelo: "CRV", placas: "DNG-272-J" },
+    { label: "Toyota Yaris (DNG-273-J)", marca: "Toyota", modelo: "Yaris", placas: "DNG-273-J" }
+  ];
   
   const [uiTransporte, setUiTransporte] = useState('Vehículo');
-  
-  // ESTADO PARA CLAVES MÚLTIPLES
   const [clavesSeleccionadas, setClavesSeleccionadas] = useState([]);
-  const [claveTemporal, setClaveTemporal] = useState(""); 
+  const [claveTemporal, setClaveTemporal] = useState("");
+
+  const [showModalCuota, setShowModalCuota] = useState(false);
+  const [calcDias, setCalcDias] = useState("");
+  const [calcMonto, setCalcMonto] = useState("");
+  const [calcMedios, setCalcMedios] = useState("");
+  const [calcMontoMedio, setCalcMontoMedio] = useState("");
 
   const [formData, setFormData] = useState({
     fecha_elaboracion: new Date().toISOString().split('T')[0],
     tipo_comision: 'Nacional', 
     comisionado: '', rfc: '', categoria: '', adscripcion: '',
     lugar: '', motivo: '', fecha_inicio: '', fecha_fin: '',
-    hora_salida: '', hora_regreso: '', // <--- CAMPOS DE HORA
+    hora_salida: '', hora_regreso: '', 
     medio_transporte: 'Terrestre', 
     vehiculo_marca: '', vehiculo_modelo: '', vehiculo_placas: '',
-    cuota_diaria: 0, 
+    cuota_diaria: '', 
     importe_combustible: 0, importe_otros: 0, importe_pasajes_aereos: 0,    
     importe_pasajes: 0, importe_congresos: 0, importe_viaticos: 0,          
     importe_total: 0, estatus: 'Borrador'
   });
 
-  // SUMA AUTOMÁTICA
   useEffect(() => {
     const total = (parseFloat(formData.importe_combustible) || 0) + 
                   (parseFloat(formData.importe_otros) || 0) + 
@@ -53,7 +61,6 @@ const CrearComision = () => {
                   (parseFloat(formData.importe_pasajes) || 0) + 
                   (parseFloat(formData.importe_congresos) || 0) + 
                   (parseFloat(formData.importe_viaticos) || 0);
-    
     setFormData(prev => ({ ...prev, importe_total: total }));
   }, [formData.importe_combustible, formData.importe_otros, formData.importe_pasajes_aereos, formData.importe_pasajes, formData.importe_congresos, formData.importe_viaticos]);
 
@@ -62,7 +69,6 @@ const CrearComision = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Lógica Claves
   const agregarClave = () => {
     if (!claveTemporal) return;
     if (!clavesSeleccionadas.includes(claveTemporal)) {
@@ -70,6 +76,7 @@ const CrearComision = () => {
         setClaveTemporal(""); 
     }
   };
+
   const eliminarClave = (claveAEliminar) => {
     setClavesSeleccionadas(clavesSeleccionadas.filter(c => c !== claveAEliminar));
   };
@@ -84,6 +91,14 @@ const CrearComision = () => {
     setFormData(nuevosDatos);
   };
 
+  const handleVehiculoChange = (e) => {
+      const index = e.target.value;
+      if (index !== "") {
+          const vehiculo = CATALOGO_VEHICULOS[index];
+          setFormData(prev => ({ ...prev, vehiculo_marca: vehiculo.marca, vehiculo_modelo: vehiculo.modelo, vehiculo_placas: vehiculo.placas }));
+      }
+  };
+
   const handleComisionadoChange = (e) => {
     const valor = e.target.value;
     let nuevosDatos = { ...formData, comisionado: valor };
@@ -92,38 +107,75 @@ const CrearComision = () => {
         nuevosDatos.rfc = personalEncontrado.rfc;
         nuevosDatos.categoria = personalEncontrado.categoria;
         nuevosDatos.adscripcion = personalEncontrado.adscripcion;
-        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-        Toast.fire({ icon: 'success', title: 'Datos cargados' });
     }
     setFormData(nuevosDatos);
   };
 
+  const aplicarCalculadora = () => {
+      let lineas = [];
+      let total = 0;
+      if(calcDias && calcMonto) {
+          const sum = parseFloat(calcDias) * parseFloat(calcMonto);
+          total += sum;
+          lineas.push(`${calcDias} x ${new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(calcMonto)}`);
+      }
+      if(calcMedios && calcMontoMedio) {
+           const numMedios = parseInt(calcMedios);
+           const sum = numMedios * parseFloat(calcMontoMedio);
+           total += sum;
+           lineas.push(`${numMedios === 1 ? '½' : numMedios + ' medios'} x ${new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(calcMontoMedio)}`);
+      }
+      if(lineas.length > 0) {
+          const texto = lineas.join('\n') + ` = ${new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(total)}`;
+          setFormData({...formData, cuota_diaria: texto});
+      }
+      setShowModalCuota(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (clavesSeleccionadas.length === 0) {
-      Swal.fire('Atención', 'Debes agregar al menos una Clave Programática', 'warning');
-      return;
-    }
-    const clavesFinales = clavesSeleccionadas.join(', ');
-    const dataToSend = { ...formData, clave_programatica: clavesFinales };
+    if (clavesSeleccionadas.length === 0) { Swal.fire('Atención', 'Agrega al menos una Clave Programática', 'warning'); return; }
+    const datosFinales = { ...formData, clave_programatica: clavesSeleccionadas.join(', ') };
 
     try {
-      const response = await fetch('/api/ordenes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSend)
-      });
-      if (response.ok) {
-        Swal.fire({ title: '¡Guardado!', text: 'Comisión registrada correctamente', icon: 'success', confirmButtonColor: '#1e3a8a' }).then(() => navigate('/'));
-      } else {
-        const errorData = await response.json();
-        Swal.fire('Error', errorData.error || 'Error al guardar', 'error');
-      }
-    } catch (error) { console.error(error); Swal.fire('Error', 'Fallo de conexión', 'error'); }
+      const response = await fetch('/api/ordenes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosFinales) });
+      if (response.ok) { Swal.fire({ title: '¡Guardado!', text: 'Comisión registrada', icon: 'success' }).then(() => navigate('/')); } 
+      else { Swal.fire('Error', 'Error al guardar', 'error'); }
+    } catch (error) { Swal.fire('Error', 'Fallo de conexión', 'error'); }
   };
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen font-sans">
+    <div className="p-8 bg-gray-50 min-h-screen font-sans relative">
+       {showModalCuota && (
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md border-t-4 border-blue-600">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-bold text-lg text-blue-900 flex items-center gap-2"><Calculator/> Asistente de Cuota Diaria</h3>
+                        <button onClick={()=>setShowModalCuota(false)} className="text-gray-500 hover:text-red-500"><X/></button>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="bg-gray-50 p-3 rounded border">
+                            <label className="block text-xs font-bold mb-2 text-gray-700">DÍAS COMPLETOS</label>
+                            <div className="flex gap-2 items-center">
+                                <input type="number" placeholder="Cant. Días" value={calcDias} onChange={(e)=>setCalcDias(e.target.value)} className="w-1/3 p-2 border rounded" />
+                                <span>X $</span>
+                                <input type="number" placeholder="Costo x Día" value={calcMonto} onChange={(e)=>setCalcMonto(e.target.value)} className="w-2/3 p-2 border rounded" />
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded border">
+                            <label className="block text-xs font-bold mb-2 text-gray-700">MEDIOS DÍAS (½)</label>
+                            <div className="flex gap-2 items-center">
+                                <input type="number" placeholder="Cant. Medios" value={calcMedios} onChange={(e)=>setCalcMedios(e.target.value)} className="w-1/3 p-2 border rounded" />
+                                <span>X $</span>
+                                <input type="number" placeholder="Costo Medio Día" value={calcMontoMedio} onChange={(e)=>setCalcMontoMedio(e.target.value)} className="w-2/3 p-2 border rounded" />
+                            </div>
+                        </div>
+                        <button type="button" onClick={aplicarCalculadora} className="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700">Generar Fórmula Automática</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
        <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow border border-gray-200">
          <div className="flex items-center justify-between mb-6 border-b pb-4">
             <h2 className="text-2xl font-bold text-blue-900">Nueva Orden de Comisión</h2>
@@ -131,7 +183,6 @@ const CrearComision = () => {
          </div>
 
          <form onSubmit={handleSubmit} className="space-y-6">
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-indigo-50 p-4 rounded-md border border-indigo-100 flex items-center gap-4">
                     <Globe className="text-indigo-600" size={24} />
@@ -171,38 +222,19 @@ const CrearComision = () => {
                     <h3 className="text-sm font-bold text-gray-800 uppercase mb-3">2. Datos del Viaje</h3>
                     <div className="space-y-3">
                         <div><label className="block text-xs font-bold text-gray-700 mb-1">Lugar</label><input name="lugar" value={formData.lugar} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
-                        
-                        {/* FECHAS Y HORAS JUNTAS */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">Fecha de Salida</label>
-                                <input type="date" name="fecha_inicio" value={formData.fecha_inicio} onChange={handleChange} className="w-full p-2 border rounded" required />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Clock size={12}/> Hora Salida</label>
-                                <input type="time" name="hora_salida" value={formData.hora_salida} onChange={handleChange} className="w-full p-2 border rounded" />
-                            </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div><label className="block text-xs font-bold text-gray-700 mb-1">Fecha Inicio</label><input type="date" name="fecha_inicio" value={formData.fecha_inicio} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
+                            <div><label className="block text-xs font-bold text-gray-700 mb-1">Hora Salida</label><input type="time" name="hora_salida" value={formData.hora_salida} onChange={handleChange} className="w-full p-2 border rounded" /></div>
+                            <div><label className="block text-xs font-bold text-gray-700 mb-1">Fecha Fin</label><input type="date" name="fecha_fin" value={formData.fecha_fin} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
+                            <div><label className="block text-xs font-bold text-gray-700 mb-1">Hora Regreso</label><input type="time" name="hora_regreso" value={formData.hora_regreso} onChange={handleChange} className="w-full p-2 border rounded" /></div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">Fecha de Regreso</label>
-                                <input type="date" name="fecha_fin" value={formData.fecha_fin} onChange={handleChange} className="w-full p-2 border rounded" required />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Clock size={12}/> Hora Regreso</label>
-                                <input type="time" name="hora_regreso" value={formData.hora_regreso} onChange={handleChange} className="w-full p-2 border rounded" />
-                            </div>
-                        </div>
-
                         <div><label className="block text-xs font-bold text-gray-700 mb-1">Motivo</label><textarea name="motivo" value={formData.motivo} onChange={handleChange} className="w-full p-2 border rounded h-16" required /></div>
                     </div>
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
                     <h3 className="text-sm font-bold text-gray-800 uppercase mb-3 flex items-center gap-2">
-                       {uiTransporte === 'Aéreo' ? <Plane size={18}/> : uiTransporte === 'Autobús' ? <Bus size={18}/> : <Car size={18}/>} 
-                       3. Transporte
+                       {uiTransporte === 'Aéreo' ? <Plane size={18}/> : uiTransporte === 'Autobús' ? <Bus size={18}/> : <Car size={18}/>} 3. Transporte
                     </h3>
                     <div className="space-y-3">
                          <div>
@@ -214,56 +246,72 @@ const CrearComision = () => {
                             </select>
                         </div>
                         {uiTransporte === 'Vehículo' ? (
-                            <div className="grid grid-cols-3 gap-2 animate-fadeIn bg-white p-3 rounded border border-gray-200">
-                                <div><label className="block text-xs font-bold text-gray-700 mb-1">Marca</label><input name="vehiculo_marca" value={formData.vehiculo_marca} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Ej. Nissan" /></div>
-                                <div><label className="block text-xs font-bold text-gray-700 mb-1">Modelo</label><input name="vehiculo_modelo" value={formData.vehiculo_modelo} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Ej. Versa" /></div>
-                                <div><label className="block text-xs font-bold text-gray-700 mb-1">Placas</label><input name="vehiculo_placas" value={formData.vehiculo_placas} onChange={handleChange} className="w-full p-2 border rounded" placeholder="XXX-000" /></div>
+                            <div className="space-y-2 animate-fadeIn">
+                                <div className="bg-blue-50 p-2 rounded border border-blue-200">
+                                    <label className="block text-xs font-bold text-blue-800 mb-1">Vehículo Oficial CESMECA</label>
+                                    <select onChange={handleVehiculoChange} className="w-full p-2 border border-blue-300 rounded bg-white text-sm">
+                                        <option value="">-- Seleccionar --</option>
+                                        {CATALOGO_VEHICULOS.map((v, idx) => (<option key={idx} value={idx}>{v.label}</option>))}
+                                    </select>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded border border-gray-200">
+                                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Marca</label><input name="vehiculo_marca" value={formData.vehiculo_marca} onChange={handleChange} className="w-full p-2 border rounded text-sm" /></div>
+                                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Modelo</label><input name="vehiculo_modelo" value={formData.vehiculo_modelo} onChange={handleChange} className="w-full p-2 border rounded text-sm" /></div>
+                                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Placas</label><input name="vehiculo_placas" value={formData.vehiculo_placas} onChange={handleChange} className="w-full p-2 border rounded text-sm" /></div>
+                                </div>
                             </div>
-                        ) : (
-                            <div className="p-4 bg-gray-100 rounded text-center text-gray-500 text-xs italic border border-gray-200">
-                                {uiTransporte === 'Aéreo' ? 'Transporte Aéreo. No requiere datos de vehículo.' : 'Transporte por Autobús. No requiere datos de vehículo.'}
-                            </div>
-                        )}
+                        ) : (<div className="p-4 bg-gray-100 rounded text-center text-gray-500 text-xs italic border">No requiere datos de vehículo.</div>)}
                     </div>
                 </div>
             </div>
 
-            {/* 4. CLAVE PROGRAMÁTICA */}
             <div className="bg-orange-50 p-6 rounded-md border border-orange-200">
-                <h3 className="text-sm font-bold text-orange-900 uppercase mb-4 flex items-center gap-2"><Briefcase size={18}/> 4. Clave Programática y Presupuestal</h3>
+                <h3 className="text-sm font-bold text-orange-900 uppercase mb-4 flex items-center gap-2"><Briefcase size={18}/> 4. Finanzas y Presupuesto</h3>
+                
+                <div className="mb-6 bg-white p-4 rounded border border-orange-200 shadow-sm">
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="block text-xs font-bold text-gray-800">FÓRMULA DE CUOTA DIARIA (Texto que saldrá en el PDF)</label>
+                        <button type="button" onClick={()=>setShowModalCuota(true)} className="flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded font-bold hover:bg-indigo-200"><Calculator size={14}/> Usar Calculadora Mágica</button>
+                    </div>
+                    <textarea name="cuota_diaria" value={formData.cuota_diaria} onChange={handleChange} rows="2" className="w-full p-2 border rounded font-mono text-sm text-gray-700 bg-gray-50 focus:bg-white" placeholder="Ej. 7 x $1,826.00&#10;½ x $949.52 = $13,731.52"></textarea>
+                    <p className="text-[10px] text-gray-500 mt-1 italic">* Puedes escribir el texto directamente o usar la calculadora para armar la fórmula.</p>
+                </div>
+
                 <div className="mb-4">
-                    <label className="block text-xs font-bold text-orange-800 mb-1">Agregar Clave Programática</label>
+                    <label className="block text-xs font-bold text-orange-800 mb-1">Clave Programática</label>
                     <div className="flex gap-2">
                         <select value={claveTemporal} onChange={(e) => setClaveTemporal(e.target.value)} className="w-full p-3 border border-orange-300 rounded bg-white text-gray-700 font-medium">
                             <option value="">-- Seleccione para agregar --</option>
                             {CLAVES_PROGRAMATICAS.map((clave, index) => (<option key={index} value={clave.valor}>{clave.label} ({clave.valor})</option>))}
                         </select>
-                        <button type="button" onClick={agregarClave} className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded shadow flex items-center gap-1 font-bold"><Plus size={20}/> Agregar</button>
+                        <button type="button" onClick={agregarClave} className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded shadow flex items-center gap-2 font-bold transition-colors"><Plus size={20}/> Agregar</button>
                     </div>
                 </div>
                 {clavesSeleccionadas.length > 0 && (
-                    <div className="mb-6 bg-white border border-orange-200 rounded p-3 shadow-inner">
-                        <p className="text-xs font-bold text-gray-500 mb-2">CLAVES ASIGNADAS:</p>
-                        <ul className="space-y-2">
+                    <div className="mb-6 bg-white border border-orange-200 rounded p-4 shadow-sm">
+                        <div className="space-y-2">
                             {clavesSeleccionadas.map((clave, idx) => (
-                                <li key={idx} className="flex justify-between items-center bg-orange-50 p-2 rounded border border-orange-100">
-                                    <span className="text-sm font-medium text-gray-700">{clave}</span>
-                                    <button type="button" onClick={() => eliminarClave(clave)} className="text-red-500 hover:text-red-700 p-1"><Trash2 size={16}/></button>
-                                </li>
+                                <div key={idx} className="flex justify-between items-center bg-orange-50 p-2 rounded border border-orange-100">
+                                    <span className="text-sm font-bold text-gray-700">{clave}</span>
+                                    <button type="button" onClick={() => eliminarClave(clave)} className="text-red-500 hover:text-red-700"><Trash2 size={18}/></button>
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     </div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                {/* 🔴 AQUÍ ESTÁ EL AJUSTE: ORDEN NUMÉRICO CORRECTO */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-orange-200">
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">26111 - Combustible</label><input type="number" step="0.01" name="importe_combustible" value={formData.importe_combustible} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37211 - Pasajes Terrestres</label><input type="number" step="0.01" name="importe_pasajes" value={formData.importe_pasajes} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37511 - Viáticos Nacionales</label><input type="number" step="0.01" name="importe_viaticos" value={formData.importe_viaticos} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">37111 - Pasajes Aéreos</label><input type="number" step="0.01" name="importe_pasajes_aereos" value={formData.importe_pasajes_aereos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37211 - Pasajes Terrestres</label><input type="number" step="0.01" name="importe_pasajes" value={formData.importe_pasajes} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37511 - Viáticos (Monto Real Acordado)</label><input type="number" step="0.01" name="importe_viaticos" value={formData.importe_viaticos} onChange={handleChange} className="w-full pl-6 p-2 border rounded border-blue-400 bg-blue-50" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">38301 - Congresos y Conv.</label><input type="number" step="0.01" name="importe_congresos" value={formData.importe_congresos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">39202 - Otros Impuestos</label><input type="number" step="0.01" name="importe_otros" value={formData.importe_otros} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
                 </div>
+
                 <div className="mt-6 p-4 bg-orange-100 rounded border border-orange-300 flex justify-between items-center">
-                    <span className="font-bold text-orange-900 text-lg">TOTAL AUTORIZADO:</span>
+                    <span className="font-bold text-orange-900 text-lg">IMPORTE TOTAL ACORDADO:</span>
                     <span className="font-black text-2xl text-blue-900">{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(formData.importe_total)}</span>
                 </div>
             </div>

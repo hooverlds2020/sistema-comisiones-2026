@@ -69,6 +69,11 @@ const date = (dateString) => {
   } catch(e) { return ''; }
 };
 
+const formatHora = (horaString) => {
+    if (!horaString) return '';
+    return `${horaString.substring(0, 5)} hrs.`;
+};
+
 const money = (amount) => {
     const val = parseFloat(amount) || 0;
     return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
@@ -77,22 +82,19 @@ const money = (amount) => {
 const styles = StyleSheet.create({
   page: { 
     paddingTop: 95, 
-    paddingBottom: 45, 
+    paddingBottom: 40, 
     paddingLeft: 30, 
     paddingRight: 30, 
     fontSize: 8, 
     fontFamily: 'Helvetica',
   },
   background: { position: 'absolute', minWidth: '100%', minHeight: '100%', display: 'block', height: '100%', width: '100%', top: 0, left: 0, zIndex: -1 },
-  headerTitle: { fontSize: 10, fontWeight: 'bold', textAlign: 'center', marginBottom: 2 },
-  
+  headerTitle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 },
   mainTable: { borderWidth: 1, borderColor: '#000', width: '100%' },
-  
   row: { flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', minHeight: 14, alignItems: 'center' }, 
   rowNoBorder: { flexDirection: 'row', alignItems: 'center' }, 
   headerRow: { flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', backgroundColor: '#f0f0f0', minHeight: 12, alignItems: 'center' }, 
   signatureRow: { flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', alignItems: 'flex-end' }, 
-  
   col100: { width: '100%', padding: 2, justifyContent: 'center' },
   col65: { width: '65%', padding: 2, borderRightWidth: 1, borderColor: '#000', justifyContent: 'center' },
   col35: { width: '35%', padding: 2, justifyContent: 'center' },
@@ -101,23 +103,18 @@ const styles = StyleSheet.create({
   col30Last: { width: '30%', padding: 2, justifyContent: 'center' },
   col50: { width: '50%', padding: 2, borderRightWidth: 1, borderColor: '#000', alignItems: 'center' },
   col50Last: { width: '50%', padding: 2, alignItems: 'center' },
-
   label: { fontSize: 7, fontWeight: 'bold', marginBottom: 1 }, 
   value: { fontSize: 8 },
-  
   gastosRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 1 }, 
   colGastoDesc: { width: '80%', padding: 1, paddingLeft: 2, justifyContent: 'center' },
   colGastoMonto: { width: '20%', padding: 1, paddingRight: 5, justifyContent: 'center', alignItems: 'flex-end' },
-  
-  signatureBlock: { alignItems: 'center', padding: 2, paddingBottom: 4, justifyContent: 'flex-end', height: '100%', width: '100%' },
+  signatureBlock: { alignItems: 'center', padding: 2, paddingBottom: 0, justifyContent: 'flex-end', height: '100%', width: '100%' },
   signatureLine: { borderTopWidth: 1, borderColor: '#000', width: '85%', marginBottom: 2 },
   signatureName: { fontSize: 7, fontWeight: 'bold', textAlign: 'center' }, 
   signatureRole: { fontSize: 6, textAlign: 'center' }, 
-
-  legalText: { fontSize: 6, textAlign: 'justify', marginTop: 2, color: '#000', lineHeight: 1.2 }, 
-  firmaConformidadContainer: { alignItems: 'center', marginTop: 12, marginBottom: 4 },
+  legalText: { fontSize: 7, textAlign: 'justify', marginTop: 2, color: '#000', lineHeight: 1.1 }, 
+  firmaConformidadContainer: { alignItems: 'center', marginTop: 8, marginBottom: 0 },
   conformidadTitle: { fontSize: 7, fontWeight: 'bold', textAlign: 'center' }, 
-
   finalDeclaration: { fontSize: 7, textAlign: 'center', marginTop: 4 } 
 });
 
@@ -125,23 +122,21 @@ const ComisionPDF = ({ data }) => {
   if (!data) return null; 
 
   const isInternational = data.tipo_comision === 'Internacional';
-  
-  const alturaFirma = isInternational ? 45 : 65;   
-  const alturaMotivo = isInternational ? 35 : 100; 
-  const espacioConformidad = isInternational ? 10 : 35; 
-
+  const alturaFirma = isInternational ? 50 : 75;   
+  const alturaMotivo = isInternational ? 35 : 90; 
+  const espacioConformidad = isInternational ? 20 : 48; 
   const textoImporteLetras = numeroALetras(data.importe_total);
   const nombreComisionado = (data.comisionado || '').toUpperCase();
   const categoriaComisionado = (data.categoria || '').toUpperCase();
   const textoFechaLugar = `SAN CRISTOBAL DE LAS CASAS, CHIAPAS; ${formatFechaLarga(data.fecha_elaboracion)}`;
-
   const nombreStr = String(data.comisionado || '').toLowerCase();
   const isDirectorTravelling = nombreStr.includes('emmanuel') || nombreStr.includes('nájera');
+  const clavesFormateadas = (data.clave_programatica || '').replace(/  Y  /g, ', ');
 
   return (
   <Document>
     <Page size="LETTER" style={styles.page} wrap>
-      <Image src="/membrete.png" style={styles.background} fixed />
+      <Image src="/membrete.png?v=3" style={styles.background} fixed />
       <Text style={styles.headerTitle}>ANEXO V. FORMATO ÚNICO DE COMISIÓN</Text>
       
       <View style={styles.mainTable}>
@@ -150,7 +145,6 @@ const ComisionPDF = ({ data }) => {
         <View style={styles.row}><View style={styles.col65}><Text style={styles.label}>CATEGORÍA:</Text><Text style={styles.value}>{categoriaComisionado}</Text></View><View style={styles.col35}><Text style={styles.label}>ADSCRIPCIÓN:</Text><Text style={styles.value}>CESMECA</Text></View></View>
         
         <View style={styles.row}>
-            {/* 🔴 AQUÍ ESTÁ EL AJUSTE: justifyContent: 'flex-start' y paddingTop para pegarlo arriba */}
             <View style={{ ...styles.col100, minHeight: alturaMotivo, justifyContent: 'flex-start', paddingTop: 4 }}> 
                 <Text style={styles.label}>MOTIVO DE LA COMISIÓN:</Text>
                 <Text style={{ ...styles.value, textAlign: 'justify', marginTop: 2 }}>{data.motivo || ''}</Text>
@@ -160,15 +154,14 @@ const ComisionPDF = ({ data }) => {
         <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', height: 26 }}>
             <View style={{ width: '40%', borderRightWidth: 1, borderColor: '#000' }}></View>
             <View style={{ width: '20%', borderRightWidth: 1, borderColor: '#000', padding: 2, justifyContent: 'center' }}><Text style={{fontSize: 7, fontWeight: 'bold', textAlign: 'center'}}>PERIODO</Text><Text style={{fontSize: 7, textAlign: 'center'}}>{date(data.fecha_inicio)} al {date(data.fecha_fin)}</Text></View>
-            <View style={{ width: '20%', borderRightWidth: 1, borderColor: '#000', padding: 2, justifyContent: 'center' }}><Text style={{fontSize: 7, fontWeight: 'bold', textAlign: 'center'}}>CUOTA DIARIA</Text><Text style={{fontSize: 7, textAlign: 'center'}}>{money(data.cuota_diaria)}</Text></View>
-            <View style={{ width: '20%', padding: 2, justifyContent: 'center' }}><Text style={{fontSize: 7, fontWeight: 'bold', textAlign: 'center'}}>IMPORTE ACORDADO</Text><Text style={{fontSize: 7, fontWeight: 'bold', textAlign: 'center'}}>{money(data.importe_total)}</Text></View>
+            <View style={{ width: '20%', borderRightWidth: 1, borderColor: '#000', padding: 2, justifyContent: 'center' }}><Text style={{fontSize: 7, fontWeight: 'bold', textAlign: 'center'}}>CUOTA DIARIA</Text><Text style={{fontSize: 6, textAlign: 'center'}}>{data.cuota_diaria || ''}</Text></View>
+            <View style={{ width: '20%', padding: 2, justifyContent: 'center' }}><Text style={{fontSize: 7, fontWeight: 'bold', textAlign: 'center'}}>IMPORTE ACORDADO</Text><Text style={{fontSize: 7, fontWeight: 'bold', textAlign: 'center'}}>{money(data.importe_viaticos)}</Text></View>
         </View>
 
         <View style={styles.row}> <View style={styles.col100}><Text style={{fontSize: 7, fontWeight: 'bold'}}>LUGAR DE COMISIÓN: <Text style={{fontWeight: 'normal', fontSize: 8}}>{data.lugar || ''}</Text></Text></View></View>
-        <View style={styles.row}> <View style={styles.col100}><Text style={{fontSize: 7, fontWeight: 'bold'}}>DÍA Y HORA DE SALIDA:  <Text style={{fontWeight: 'normal', fontSize: 8}}>{date(data.fecha_inicio)} - {data.hora_salida || ''}</Text>    DÍA Y HORA DE REGRESO: <Text style={{fontWeight: 'normal', fontSize: 8}}>{date(data.fecha_fin)} - {data.hora_regreso || ''}</Text></Text></View></View>
+        <View style={styles.row}> <View style={styles.col100}><Text style={{fontSize: 7, fontWeight: 'bold'}}>DÍA Y HORA DE SALIDA:  <Text style={{fontWeight: 'normal', fontSize: 8}}>{date(data.fecha_inicio)} - {formatHora(data.hora_salida)}</Text>    DÍA Y HORA DE REGRESO: <Text style={{fontWeight: 'normal', fontSize: 8}}>{date(data.fecha_fin)} - {formatHora(data.hora_regreso)}</Text></Text></View></View>
         <View style={styles.row}><View style={styles.col100}><Text style={{fontSize: 7, fontWeight: 'bold'}}>MEDIO DE TRANSPORTE: <Text style={{fontWeight: 'normal', fontSize: 8}}>{data.medio_transporte || ''}</Text></Text></View></View>
         
-        {/* Lógica del Vehículo (Ya está integrada, si hay datos se muestra, si no, se oculta) */}
         {(data.vehiculo_marca || data.vehiculo_placas) ? (
             <View style={styles.row}>
                 <View style={styles.col40}><Text style={styles.label}>MARCA:</Text><Text style={styles.value}>{data.vehiculo_marca}</Text></View>
@@ -184,16 +177,17 @@ const ComisionPDF = ({ data }) => {
                 <View style={{ paddingTop: 2, paddingLeft: 2, paddingRight: 2, paddingBottom: 1 }}>
                     <Text style={{ fontSize: 7, marginBottom: 2 }}>
                         <Text style={{ fontWeight: 'bold' }}>CLAVE PROGRAMÁTICA: </Text>
-                        {data.clave_programatica || ''}
+                        {clavesFormateadas}
                     </Text>
                 </View>
 
+                {/* 🔴 AQUÍ ESTÁ LA CORRECCIÓN: ESTRICto ORDEN NUMÉRICO */}
                 {(parseFloat(data.importe_combustible) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>26111.- COMBUSTIBLE</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_combustible)}</Text></View></View> : null}
-                {(parseFloat(data.importe_otros) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>39202.- OTROS IMPTOS. Y DERECHOS</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_otros)}</Text></View></View> : null}
                 {(parseFloat(data.importe_pasajes_aereos) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>37111.- PASAJES NACIONALES AÉREOS</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_pasajes_aereos)}</Text></View></View> : null}
                 {(parseFloat(data.importe_pasajes) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>37211.- PASAJES NACIONALES TERRESTRES</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_pasajes)}</Text></View></View> : null}
                 {(parseFloat(data.importe_viaticos) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>37511.- VIÁTICOS NACIONALES</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_viaticos)}</Text></View></View> : null}
                 {(parseFloat(data.importe_congresos) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>38301.- CONGRESOS Y CONVENCIONES</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_congresos)}</Text></View></View> : null}
+                {(parseFloat(data.importe_otros) > 0) ? <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text style={{fontSize: 8}}>39202.- OTROS IMPTOS. Y DERECHOS</Text></View><View style={styles.colGastoMonto}><Text style={{fontSize: 8, fontWeight: 'bold'}}>{money(data.importe_otros)}</Text></View></View> : null}
                 
                 <View style={{ flexDirection: 'row', borderTopWidth: 1, borderColor: '#000', marginTop: 1, paddingTop: 2 }}>
                     <View style={styles.colGastoDesc}><Text style={{fontSize: 8, fontWeight: 'bold'}}>IMPORTE TOTAL:</Text></View>
@@ -287,16 +281,19 @@ const ComisionPDF = ({ data }) => {
             </View>
             
             <View style={styles.rowNoBorder}>
-                <View style={{ padding: 4, width: '100%' }}>
+                <View style={{ padding: 4, paddingBottom: 2, width: '100%' }}>
                     <Text style={styles.legalText}>
                         RECIBÍ: DE LA UNIVERSIDAD AUTÓNOMA DE CIENCIAS Y ARTES DE CHIAPAS LA CANTIDAD DE {money(data.importe_total)} <Text style={{fontWeight: 'bold'}}>{textoImporteLetras}</Text> POR EL (LOS) CONCEPTOS ANTES DESCRITOS, LOS CUALES DEBERÁN SER COMPROBADOS DE ACUERDO A LA FUENTE DE FINANCIAMIENTO O DEVUELTOS A MÁS TARDAR EL QUINTO DÍA POSTERIOR A LA CONCLUSIÓN DE LA COMISIÓN; DE NO CUMPLIRSE ESTA CONDICIÓN, DOY MI CONSENTIMIENTO Y AUTORIZACIÓN PARA QUE SE DESCUENTE EN LA NÓMINA DE SUELDOS MÁS PRÓXIMA O DE ALGUNA OTRA PERCEPCIÓN QUE ME CORRESPONDA (ARTÍCULO 33 DEL REGLAMENTO DE NORMAS Y TARIFAS PARA LA APLICACIÓN DE VIÁTICOS Y PASAJES DE LA UNICACH).
                     </Text>
                     <View style={styles.firmaConformidadContainer}>
                         <Text style={{ ...styles.conformidadTitle, marginBottom: espacioConformidad }}>FIRMA DE CONFORMIDAD</Text>
-                        <View style={{ borderTopWidth: 1, borderColor: '#000', width: 220, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 7, marginTop: 2, fontWeight: 'bold' }}>{nombreComisionado}</Text>
-                            <Text style={{ fontSize: 6, marginTop: 1 }}>{categoriaComisionado}</Text>
+                        
+                        <View style={{ width: 220, alignItems: 'center' }}>
+                            <View style={{ borderTopWidth: 1, borderColor: '#000', width: '100%', marginBottom: 2 }}></View>
+                            <Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{nombreComisionado}</Text>
+                            <Text style={{ fontSize: 6, textAlign: 'center' }}>{categoriaComisionado}</Text>
                         </View>
+
                     </View>
                 </View>
             </View>
