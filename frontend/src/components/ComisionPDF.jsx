@@ -1,6 +1,11 @@
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
 
+// --- CONSTANTES DE AUTORIDADES ---
+const DIRECTOR = { nombre: "DR. EMMANUEL NÁJERA DE LEÓN", cargo: "DIRECTOR CESMECA-UNICACH" };
+const SECRETARIO = { nombre: "LIC. ENRIQUE PÉREZ LÓPEZ", cargo: "SECRETARIO ACADÉMICO-UNICACH" };
+const RECTORA = { nombre: "ARQUEOL. JUANA DE DIOS LÓPEZ JIMÉNEZ", cargo: "RECTORA" };
+
 // --- UTILIDADES ---
 const numeroALetras = (amount) => {
   if (!amount || isNaN(amount)) return 'CERO PESOS 00/100 M.N.';
@@ -76,7 +81,7 @@ const money = (amount) => {
 
 const styles = StyleSheet.create({
   page: { 
-    paddingTop: 88, // 🔴 Ajustado: Subimos el contenido ligeramente (antes 95)
+    paddingTop: 88, 
     paddingBottom: 95, 
     paddingLeft: 30, 
     paddingRight: 30, 
@@ -113,27 +118,19 @@ const styles = StyleSheet.create({
   finalDeclaration: { fontSize: 6.5, textAlign: 'center', marginTop: 5 } 
 });
 
-const ComisionPDF = ({ data, autoridades = [] }) => {
-  if (!data || autoridades.length === 0) return null; 
-
-  const director = autoridades.find(a => a.rol === 'DIRECTOR') || {};
-  const secretario = autoridades.find(a => a.rol === 'SECRETARIO') || {};
-  const rectora = autoridades.find(a => a.rol === 'RECTORA') || {};
+const ComisionPDF = ({ data }) => {
+  if (!data) return null; 
 
   const tipoComisionStr = String(data.tipo_comision || '').toUpperCase();
-  const esMultifirma = tipoComisionStr.includes('INTERNACIONAL');
-  
   const comisionadoNombre = (data.comisionado || '').toUpperCase();
   const categoriaComisionado = (data.categoria || '').toUpperCase();
   
-  const esDirectorViajando = comisionadoNombre.includes("EMMANUEL NÁJERA");
-  const autorizadorNombre = esDirectorViajando ? secretario.nombre : director.nombre;
-  const autorizadorCargo = esDirectorViajando ? secretario.cargo : director.cargo;
+  const esInternacional = tipoComisionStr.includes('INTERNACIONAL');
+  const esDirectorViajando = comisionadoNombre.includes("EMMANUEL NÁJERA") || comisionadoNombre.includes("EMMANUEL NAJERA");
 
-  // 🔴 Ajustado: Aumentamos el espacio para firmar en caso de 4 firmas (pasó de 38 a 45)
-  const alturaFirma = esMultifirma ? 45 : 60;   
-  const alturaMotivo = esMultifirma ? 25 : 50; 
-  const espacioFirmaConformidad = esMultifirma ? 18 : 35;
+  const alturaFirma = esInternacional ? 45 : 60;   
+  const alturaMotivo = esInternacional ? 25 : 50; 
+  const espacioFirmaConformidad = esInternacional ? 18 : 35;
 
   const textoImporteLetras = numeroALetras(data.importe_total);
   const textoFechaLugar = `SAN CRISTOBAL DE LAS CASAS, CHIAPAS; ${formatFechaLarga(data.fecha_elaboracion)}`;
@@ -197,17 +194,81 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
         <View style={styles.row}><View style={styles.col100}><Text style={{ fontSize: 7, textAlign: 'right', paddingRight: 5 }}>{textoFechaLugar}</Text></View></View>
 
         <View wrap={false} style={{ width: '100%' }}>
-            {esMultifirma ? (
-                <View>
-                    <View style={styles.headerRow}><View style={styles.col50}><Text style={styles.label}>COMISIONADO</Text></View><View style={styles.col50Last}><Text style={styles.label}>AUTORIZA</Text></View></View>
-                    <View style={{ ...styles.signatureRow, height: alturaFirma }}><View style={styles.col50}><View style={styles.signatureBlock}><View style={styles.signatureLine}/><Text style={styles.signatureName}>{comisionadoNombre}</Text><Text style={styles.signatureRole}>{categoriaComisionado}</Text></View></View><View style={styles.col50Last}><View style={styles.signatureBlock}><View style={styles.signatureLine}/><Text style={styles.signatureName}>{director.nombre}</Text><Text style={styles.signatureRole}>{director.cargo}</Text></View></View></View>
-                    <View style={styles.headerRow}><View style={styles.col50}><Text style={styles.label}>Vo. Bo.</Text></View><View style={styles.col50Last}><Text style={styles.label}>Vo. Bo.</Text></View></View>
-                    <View style={{ ...styles.signatureRow, height: alturaFirma }}><View style={styles.col50}><View style={styles.signatureBlock}><View style={styles.signatureLine}/><Text style={styles.signatureName}>{secretario.nombre}</Text><Text style={styles.signatureRole}>{secretario.cargo}</Text></View></View><View style={styles.col50Last}><View style={styles.signatureBlock}><View style={styles.signatureLine}/><Text style={styles.signatureName}>{rectora.nombre}</Text><Text style={styles.signatureRole}>{rectora.cargo}</Text></View></View></View>
-                </View>
+            
+            {esInternacional ? (
+                esDirectorViajando ? (
+                    /* 🔴 REGLA 4: Director (Internacional) - 3 Firmas EN FORMA DE PIRÁMIDE (CORREGIDO) */
+                    <View>
+                        {/* PRIMERA FILA: COMISIONADO CENTRADO */}
+                        <View style={styles.headerRow}>
+                            <View style={{ width: '100%', alignItems: 'center', padding: 2 }}>
+                                <Text style={styles.label}>COMISIONADO</Text>
+                            </View>
+                        </View>
+                        <View style={{ ...styles.signatureRow, height: alturaFirma, justifyContent: 'center' }}>
+                            <View style={{ width: '50%', alignItems: 'center' }}>
+                                <View style={styles.signatureBlock}>
+                                    <View style={styles.signatureLine}></View>
+                                    <Text style={styles.signatureName}>{comisionadoNombre}</Text>
+                                    <Text style={styles.signatureRole}>{categoriaComisionado}</Text>
+                                </View>
+                            </View>
+                        </View>
+                        
+                        {/* SEGUNDA FILA: SECRETARIO Y RECTORA */}
+                        <View style={styles.headerRow}>
+                            <View style={styles.col50}><Text style={styles.label}>AUTORIZA</Text></View>
+                            <View style={styles.col50Last}><Text style={styles.label}>Vo. Bo.</Text></View>
+                        </View>
+                        <View style={{ ...styles.signatureRow, height: alturaFirma }}>
+                            <View style={styles.col50}>
+                                <View style={styles.signatureBlock}>
+                                    <View style={styles.signatureLine}></View>
+                                    <Text style={styles.signatureName}>{SECRETARIO.nombre}</Text>
+                                    <Text style={styles.signatureRole}>{SECRETARIO.cargo}</Text>
+                                </View>
+                            </View>
+                            <View style={styles.col50Last}>
+                                <View style={styles.signatureBlock}>
+                                    <View style={styles.signatureLine}></View>
+                                    <Text style={styles.signatureName}>{RECTORA.nombre}</Text>
+                                    <Text style={styles.signatureRole}>{RECTORA.cargo}</Text>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+                ) : (
+                    /* --- REGLA 2: Personal (Internacional) - 4 Firmas --- */
+                    <View>
+                        <View style={styles.headerRow}><View style={styles.col50}><Text style={styles.label}>COMISIONADO</Text></View><View style={styles.col50Last}><Text style={styles.label}>AUTORIZA</Text></View></View>
+                        <View style={{ ...styles.signatureRow, height: alturaFirma }}><View style={styles.col50}><View style={styles.signatureBlock}><View style={styles.signatureLine}/><Text style={styles.signatureName}>{comisionadoNombre}</Text><Text style={styles.signatureRole}>{categoriaComisionado}</Text></View></View><View style={styles.col50Last}><View style={styles.signatureBlock}><View style={styles.signatureLine}/><Text style={styles.signatureName}>{DIRECTOR.nombre}</Text><Text style={styles.signatureRole}>{DIRECTOR.cargo}</Text></View></View></View>
+                        <View style={styles.headerRow}><View style={styles.col50}><Text style={styles.label}>Vo. Bo.</Text></View><View style={styles.col50Last}><Text style={styles.label}>Vo. Bo.</Text></View></View>
+                        <View style={{ ...styles.signatureRow, height: alturaFirma }}><View style={styles.col50}><View style={styles.signatureBlock}><View style={styles.signatureLine}/><Text style={styles.signatureName}>{SECRETARIO.nombre}</Text><Text style={styles.signatureRole}>{SECRETARIO.cargo}</Text></View></View><View style={styles.col50Last}><View style={styles.signatureBlock}><View style={styles.signatureLine}/><Text style={styles.signatureName}>{RECTORA.nombre}</Text><Text style={styles.signatureRole}>{RECTORA.cargo}</Text></View></View></View>
+                    </View>
+                )
             ) : (
+                /* --- REGLAS 1 Y 3: Estatal / Nacional (2 Firmas) --- */
                 <View>
-                    <View style={styles.headerRow}><View style={styles.col50}><Text style={styles.label}>COMISIONADO</Text></View><View style={styles.col50Last}><Text style={styles.label}>AUTORIZA</Text></View></View>
-                    <View style={{ ...styles.signatureRow, height: alturaFirma }}><View style={styles.col50}><View style={styles.signatureBlock}><View style={styles.signatureLine}/><Text style={styles.signatureName}>{comisionadoNombre}</Text><Text style={styles.signatureRole}>{categoriaComisionado}</Text></View></View><View style={styles.col50Last}><View style={styles.signatureBlock}><View style={styles.signatureLine}/><Text style={styles.signatureName}>{autorizadorNombre}</Text><Text style={styles.signatureRole}>{autorizadorCargo}</Text></View></View></View>
+                    <View style={styles.headerRow}>
+                        <View style={styles.col50}><Text style={styles.label}>COMISIONADO</Text></View>
+                        <View style={styles.col50Last}><Text style={styles.label}>AUTORIZA</Text></View>
+                    </View>
+                    <View style={{ ...styles.signatureRow, height: alturaFirma }}> 
+                        <View style={styles.col50}>
+                            <View style={styles.signatureBlock}>
+                                <View style={styles.signatureLine}></View>
+                                <Text style={styles.signatureName}>{comisionadoNombre}</Text>
+                                <Text style={styles.signatureRole}>{categoriaComisionado}</Text>
+                            </View>
+                        </View>
+                        <View style={styles.col50Last}>
+                            <View style={styles.signatureBlock}>
+                                <View style={styles.signatureLine}></View>
+                                <Text style={styles.signatureName}>{esDirectorViajando ? SECRETARIO.nombre : DIRECTOR.nombre}</Text>
+                                <Text style={styles.signatureRole}>{esDirectorViajando ? SECRETARIO.cargo : DIRECTOR.cargo}</Text>
+                            </View>
+                        </View>
+                    </View>
                 </View>
             )}
 

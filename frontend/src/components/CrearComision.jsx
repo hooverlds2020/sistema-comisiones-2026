@@ -14,7 +14,6 @@ const CrearComision = () => {
   const [clavesSeleccionadas, setClavesSeleccionadas] = useState([]);
   const [claveTemporal, setClaveTemporal] = useState("");
 
-  // 🔴 NUEVO ESTADO PARA CONTROLAR NUESTRA LISTA ELEGANTE
   const [showDropdown, setShowDropdown] = useState(false);
 
   const [showModalCuota, setShowModalCuota] = useState(false);
@@ -86,7 +85,6 @@ const CrearComision = () => {
       }
   };
 
-  // Mantenemos esto por si pegan el nombre directamente
   const handleComisionadoChange = (e) => {
     const valor = e.target.value;
     let nuevosDatos = { ...formData, comisionado: valor };
@@ -130,9 +128,10 @@ const CrearComision = () => {
   };
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen font-sans relative">
+    // 🔴 RESPONSIVE: p-4 en móvil, p-8 en escritorio
+    <div className="p-4 md:p-8 bg-gray-50 min-h-screen font-sans relative">
        {showModalCuota && (
-            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
                 <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md border-t-4 border-blue-600">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="font-bold text-lg text-blue-900 flex items-center gap-2"><Calculator/> Asistente de Cuota Diaria</h3>
@@ -161,26 +160,28 @@ const CrearComision = () => {
             </div>
         )}
 
-       <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow border border-gray-200">
+       {/* 🔴 RESPONSIVE: p-4 en móvil, p-8 en escritorio */}
+       <div className="max-w-6xl mx-auto bg-white p-4 md:p-8 rounded-lg shadow border border-gray-200">
          <div className="flex items-center justify-between mb-6 border-b pb-4">
-            <h2 className="text-2xl font-bold text-blue-900">Nueva Orden de Comisión</h2>
-            <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700 flex items-center gap-1"><ArrowLeft size={18}/> Volver</button>
+            <h2 className="text-xl md:text-2xl font-bold text-blue-900">Nueva Orden de Comisión</h2>
+            <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm md:text-base"><ArrowLeft size={18}/> Volver</button>
          </div>
 
          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-indigo-50 p-4 rounded-md border border-indigo-100 flex items-center gap-4">
-                    <Globe className="text-indigo-600" size={24} />
+                    <Globe className="text-indigo-600 flex-shrink-0" size={24} />
                     <div className="w-full">
                         <label className="block text-xs font-bold text-indigo-800 mb-1">TIPO DE COMISIÓN</label>
+                        {/* 🔴 TEXTOS LIMPIOS: Ya no dice el número de firmas para evitar confusiones */}
                         <select name="tipo_comision" value={formData.tipo_comision} onChange={handleChange} className="w-full p-2 border rounded font-bold text-indigo-900 bg-white">
-                            <option value="Nacional">NACIONAL / ESTATAL (2 Firmas)</option>
-                            <option value="Internacional">INTERNACIONAL (4 Firmas)</option>
+                            <option value="Nacional">NACIONAL / ESTATAL</option>
+                            <option value="Internacional">INTERNACIONAL</option>
                         </select>
                     </div>
                 </div>
                 <div className="bg-gray-100 p-4 rounded-md border border-gray-200 flex items-center gap-4">
-                    <Calendar className="text-gray-600" size={24} />
+                    <Calendar className="text-gray-600 flex-shrink-0" size={24} />
                     <div className="w-full">
                         <label className="block text-xs font-bold text-gray-700 mb-1">FECHA DE ELABORACIÓN</label>
                         <input type="date" name="fecha_elaboracion" value={formData.fecha_elaboracion} onChange={handleChange} className="w-full p-2 border rounded font-bold text-gray-800" />
@@ -191,8 +192,6 @@ const CrearComision = () => {
             <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
                 <h3 className="text-sm font-bold text-blue-800 uppercase mb-3 flex items-center gap-2"><UserCheck size={18}/> 1. Datos del Comisionado</h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    
-                    {/* 🔴 AQUÍ ESTÁ EL NUEVO DROPDOWN ELEGANTE */}
                     <div className="md:col-span-2 relative">
                         <label className="block text-xs font-bold text-gray-700 mb-1">Nombre Completo</label>
                         <input 
@@ -235,16 +234,18 @@ const CrearComision = () => {
 
                     <div><label className="block text-xs font-bold text-gray-700 mb-1">R.F.C.</label><input name="rfc" value={formData.rfc} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Categoría</label><input name="categoria" value={formData.categoria} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
-                    <div className="md:col-span-2"><label className="block text-xs font-bold text-gray-700 mb-1">Adscripción</label><input name="adscripcion" value={formData.adscripcion} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
+                    <div className="md:col-span-4"><label className="block text-xs font-bold text-gray-700 mb-1">Adscripción</label><input name="adscripcion" value={formData.adscripcion} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
                     <h3 className="text-sm font-bold text-gray-800 uppercase mb-3">2. Datos del Viaje</h3>
                     <div className="space-y-3">
                         <div><label className="block text-xs font-bold text-gray-700 mb-1">Lugar</label><input name="lugar" value={formData.lugar} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
-                        <div className="grid grid-cols-2 gap-2">
+                        
+                        {/* 🔴 RESPONSIVE: En móviles se apilan, en sm y superior se ponen lado a lado */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div><label className="block text-xs font-bold text-gray-700 mb-1">Fecha Inicio</label><input type="date" name="fecha_inicio" value={formData.fecha_inicio} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
                             <div><label className="block text-xs font-bold text-gray-700 mb-1">Hora Salida</label><input type="time" name="hora_salida" value={formData.hora_salida} onChange={handleChange} className="w-full p-2 border rounded" /></div>
                             <div><label className="block text-xs font-bold text-gray-700 mb-1">Fecha Fin</label><input type="date" name="fecha_fin" value={formData.fecha_fin} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
@@ -256,7 +257,7 @@ const CrearComision = () => {
 
                 <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
                     <h3 className="text-sm font-bold text-gray-800 uppercase mb-3 flex items-center gap-2">
-                       {uiTransporte === 'Aéreo' ? <Plane size={18}/> : uiTransporte === 'Autobús' ? <Bus size={18}/> : <Car size={18}/>} 3. Transporte
+                        {uiTransporte === 'Aéreo' ? <Plane size={18}/> : uiTransporte === 'Autobús' ? <Bus size={18}/> : <Car size={18}/>} 3. Transporte
                     </h3>
                     <div className="space-y-3">
                          <div>
@@ -278,7 +279,8 @@ const CrearComision = () => {
                                         ))}
                                     </select>
                                 </div>
-                                <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded border border-gray-200">
+                                {/* 🔴 RESPONSIVE: En móviles se apilan los 3 campos, en sm se ponen en columnas */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3 rounded border border-gray-200">
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Marca</label><input name="vehiculo_marca" value={formData.vehiculo_marca} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Modelo</label><input name="vehiculo_modelo" value={formData.vehiculo_modelo} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Placas</label><input name="vehiculo_placas" value={formData.vehiculo_placas} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
@@ -289,13 +291,14 @@ const CrearComision = () => {
                 </div>
             </div>
 
-            <div className="bg-orange-50 p-6 rounded-md border border-orange-200">
+            <div className="bg-orange-50 p-4 md:p-6 rounded-md border border-orange-200">
                 <h3 className="text-sm font-bold text-orange-900 uppercase mb-4 flex items-center gap-2"><Briefcase size={18}/> 4. Finanzas y Presupuesto</h3>
                 
                 <div className="mb-6 bg-white p-4 rounded border border-orange-200 shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
+                    {/* 🔴 RESPONSIVE: Botón de calculadora salta a la siguiente línea en móviles */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
                         <label className="block text-xs font-bold text-gray-800">FÓRMULA DE CUOTA DIARIA (Texto que saldrá en el PDF)</label>
-                        <button type="button" onClick={()=>setShowModalCuota(true)} className="flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded font-bold hover:bg-indigo-200"><Calculator size={14}/> Usar Calculadora Mágica</button>
+                        <button type="button" onClick={()=>setShowModalCuota(true)} className="flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded font-bold hover:bg-indigo-200 w-full sm:w-auto justify-center"><Calculator size={14}/> Usar Calculadora Mágica</button>
                     </div>
                     <textarea name="cuota_diaria" value={formData.cuota_diaria} onChange={handleChange} rows="2" className="w-full p-2 border rounded font-mono text-sm text-gray-700 bg-gray-50 focus:bg-white" placeholder="Ej. 7 x $1,826.00&#10;½ x $949.52 = $13,731.52"></textarea>
                     <p className="text-[10px] text-gray-500 mt-1 italic">* Puedes escribir el texto directamente o usar la calculadora para armar la fórmula.</p>
@@ -303,30 +306,30 @@ const CrearComision = () => {
 
                 <div className="mb-4">
                     <label className="block text-xs font-bold text-orange-800 mb-1">Clave Programática</label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <select value={claveTemporal} onChange={(e) => setClaveTemporal(e.target.value)} className="w-full p-3 border border-orange-300 rounded bg-white text-gray-700 font-medium">
                             <option value="">-- Seleccione para agregar --</option>
                             {catalogoClaves.map((clave, index) => (
                                 <option key={index} value={clave.valor}>{clave.label} ({clave.valor})</option>
                             ))}
                         </select>
-                        <button type="button" onClick={agregarClave} className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded shadow flex items-center gap-2 font-bold transition-colors"><Plus size={20}/> Agregar</button>
+                        <button type="button" onClick={agregarClave} className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 sm:py-2 rounded shadow flex justify-center items-center gap-2 font-bold transition-colors w-full sm:w-auto"><Plus size={20}/> Agregar</button>
                     </div>
                 </div>
                 {clavesSeleccionadas.length > 0 && (
                     <div className="mb-6 bg-white border border-orange-200 rounded p-4 shadow-sm">
                         <div className="space-y-2">
                             {clavesSeleccionadas.map((clave, idx) => (
-                                <div key={idx} className="flex justify-between items-center bg-orange-50 p-2 rounded border border-orange-100">
-                                    <span className="text-sm font-bold text-gray-700">{clave}</span>
-                                    <button type="button" onClick={() => eliminarClave(clave)} className="text-red-500 hover:text-red-700"><Trash2 size={18}/></button>
+                                <div key={idx} className="flex justify-between items-center bg-orange-50 p-2 rounded border border-orange-100 break-all gap-2">
+                                    <span className="text-sm font-bold text-gray-700 leading-tight">{clave}</span>
+                                    <button type="button" onClick={() => eliminarClave(clave)} className="text-red-500 hover:text-red-700 p-1 flex-shrink-0"><Trash2 size={18}/></button>
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-orange-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pt-4 border-t border-orange-200">
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">26111 - Combustible</label><input type="number" step="0.01" name="importe_combustible" value={formData.importe_combustible} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">37111 - Pasajes Aéreos</label><input type="number" step="0.01" name="importe_pasajes_aereos" value={formData.importe_pasajes_aereos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">37211 - Pasajes Terrestres</label><input type="number" step="0.01" name="importe_pasajes" value={formData.importe_pasajes} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
@@ -335,15 +338,17 @@ const CrearComision = () => {
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">39202 - Otros Impuestos</label><input type="number" step="0.01" name="importe_otros" value={formData.importe_otros} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
                 </div>
 
-                <div className="mt-6 p-4 bg-orange-100 rounded border border-orange-300 flex justify-between items-center">
+                {/* 🔴 RESPONSIVE: El cuadro del total se adapta y centra en móviles */}
+                <div className="mt-6 p-4 bg-orange-100 rounded border border-orange-300 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left gap-2 sm:gap-0">
                     <span className="font-bold text-orange-900 text-lg">IMPORTE TOTAL ACORDADO:</span>
-                    <span className="font-black text-2xl text-blue-900">{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(formData.importe_total)}</span>
+                    <span className="font-black text-2xl md:text-3xl text-blue-900">{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(formData.importe_total)}</span>
                 </div>
             </div>
 
-            <div className="flex justify-end gap-4 mt-8 pt-4 border-t">
-              <button type="button" onClick={() => navigate('/')} className="px-4 py-2 border rounded hover:bg-gray-50">Cancelar</button>
-              <button type="submit" className="px-8 py-3 bg-blue-900 text-white rounded hover:bg-blue-800 flex items-center gap-2 font-bold shadow-lg transition-transform active:scale-95"><Save size={20}/> Guardar Orden</button>
+            {/* 🔴 RESPONSIVE: Botones abajo invertidos en móvil (Guardar arriba, Cancelar abajo) y anchos al 100% */}
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 md:gap-4 mt-8 pt-4 border-t">
+              <button type="button" onClick={() => navigate('/')} className="w-full sm:w-auto px-4 py-3 sm:py-2 border rounded hover:bg-gray-50 text-gray-700 font-bold">Cancelar</button>
+              <button type="submit" className="w-full sm:w-auto px-8 py-3 bg-blue-900 text-white rounded hover:bg-blue-800 flex justify-center items-center gap-2 font-bold shadow-lg transition-transform active:scale-95"><Save size={20}/> Guardar Orden</button>
             </div>
          </form>
        </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Eye, Edit, FileText, Search } from 'lucide-react';
+import { Plus, Edit, FileText, Search } from 'lucide-react';
 
 const ComisionesTable = () => {
   const [ordenes, setOrdenes] = useState([]);
@@ -51,12 +51,10 @@ const ComisionesTable = () => {
           />
         </div>
 
-        {/* CONTENEDOR RESPONSIVO DE LA TABLA */}
-        {/* 🔴 Aquí agregamos overflow-x-auto y ocultamos el overflow general del contenedor redondeado */}
+        {/* Tabla Responsiva */}
         <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left border-collapse min-w-[800px]">
-              {/* min-w-[800px] asegura que la tabla no se aplaste demasiado en móviles */}
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-[10px] uppercase font-black text-gray-500 tracking-widest text-center">
                   <th className="px-4 py-4 md:px-6">Nº Oficio</th>
@@ -91,13 +89,6 @@ const ComisionesTable = () => {
                     <td className="px-4 py-4 md:px-6">
                       <div className="flex justify-center gap-2 md:gap-3">
                         <button 
-                          onClick={() => navigate(`/orden/${orden.id}`)} 
-                          className="text-blue-600 hover:bg-blue-100 p-1.5 rounded-md transition-colors"
-                          title="Ver Vista Previa"
-                        >
-                          <Eye size={18} />
-                        </button>
-                        <button 
                           onClick={() => navigate(`/editar/${orden.id}`)} 
                           className="text-orange-500 hover:bg-orange-100 p-1.5 rounded-md transition-colors"
                           title="Editar"
@@ -107,7 +98,7 @@ const ComisionesTable = () => {
                         <button 
                           onClick={() => navigate(`/orden/${orden.id}`)} 
                           className="text-red-600 hover:bg-red-100 p-1.5 rounded-md transition-colors"
-                          title="Generar PDF"
+                          title="Ver y Generar PDF"
                         >
                           <FileText size={18} />
                         </button>

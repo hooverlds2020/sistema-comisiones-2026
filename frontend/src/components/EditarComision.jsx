@@ -7,6 +7,7 @@ const EditarComision = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const [loading, setLoading] = useState(true);
   const [catalogoPersonal, setCatalogoPersonal] = useState([]);
   const [catalogoVehiculos, setCatalogoVehiculos] = useState([]);
   const [catalogoClaves, setCatalogoClaves] = useState([]);
@@ -15,9 +16,7 @@ const EditarComision = () => {
   const [clavesSeleccionadas, setClavesSeleccionadas] = useState([]);
   const [claveTemporal, setClaveTemporal] = useState("");
 
-  // 🔴 NUEVO ESTADO PARA LA LISTA ELEGANTE
   const [showDropdown, setShowDropdown] = useState(false);
-
   const [showModalCuota, setShowModalCuota] = useState(false);
   const [calcDias, setCalcDias] = useState("");
   const [calcMonto, setCalcMonto] = useState("");
@@ -25,8 +24,7 @@ const EditarComision = () => {
   const [calcMontoMedio, setCalcMontoMedio] = useState("");
 
   const [formData, setFormData] = useState({
-    fecha_elaboracion: new Date().toISOString().split('T')[0],
-    tipo_comision: 'Nacional',
+    fecha_elaboracion: '', tipo_comision: 'Nacional', 
     comisionado: '', rfc: '', categoria: '', adscripcion: '',
     lugar: '', motivo: '', fecha_inicio: '', fecha_fin: '',
     hora_salida: '', hora_regreso: '', 
@@ -38,42 +36,61 @@ const EditarComision = () => {
     importe_total: 0, estatus: 'Borrador'
   });
 
-  useEffect(() => {
-    fetch('/api/personal').then(res => res.json()).then(data => setCatalogoPersonal(data)).catch(console.error);
-    fetch('/api/vehiculos').then(res => res.json()).then(data => setCatalogoVehiculos(data)).catch(console.error);
-    fetch('/api/claves').then(res => res.json()).then(data => setCatalogoClaves(data)).catch(console.error);
-  }, []);
+  const formatDateForInput = (dateString) => {
+      if (!dateString) return '';
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return '';
+      return d.toISOString().split('T')[0];
+  };
 
   useEffect(() => {
-    fetch(`/api/ordenes/${id}`)
-      .then(res => res.json())
-      .then(data => {
-        if(data.fecha_inicio) data.fecha_inicio = data.fecha_inicio.split('T')[0];
-        if(data.fecha_fin) data.fecha_fin = data.fecha_fin.split('T')[0];
-        if(data.fecha_elaboracion) data.fecha_elaboracion = data.fecha_elaboracion.split('T')[0];
-        
-        const cleanData = { ...data };
-        ['importe_combustible', 'importe_otros', 'importe_pasajes_aereos', 'importe_pasajes', 'importe_congresos', 'importe_viaticos'].forEach(field => {
-            cleanData[field] = parseFloat(data[field]) || 0;
-        });
+    const fetchAllData = async () => {
+        try {
+            const [resPersonal, resVehiculos, resClaves, resOrden] = await Promise.all([
+                fetch('/api/personal'),
+                fetch('/api/vehiculos'),
+                fetch('/api/claves'),
+                fetch(`/api/ordenes/${id}`)
+            ]);
 
-        if (!cleanData.cuota_diaria) cleanData.cuota_diaria = '';
-        if (!cleanData.tipo_comision) cleanData.tipo_comision = 'Nacional';
-        if (!cleanData.medio_transporte) cleanData.medio_transporte = 'Terrestre';
+            if (resPersonal.ok) setCatalogoPersonal(await resPersonal.json());
+            if (resVehiculos.ok) setCatalogoVehiculos(await resVehiculos.json());
+            if (resClaves.ok) setCatalogoClaves(await resClaves.json());
 
-        if (cleanData.medio_transporte === 'Aéreo') { setUiTransporte('Aéreo'); } 
-        else {
-            if (cleanData.vehiculo_placas && cleanData.vehiculo_placas.trim().length > 0) { setUiTransporte('Vehículo'); } 
-            else { setUiTransporte('Autobús'); }
+            if (resOrden.ok) {
+                const orden = await resOrden.json();
+                
+                setFormData({
+                    ...orden,
+                    fecha_elaboracion: formatDateForInput(orden.fecha_elaboracion) || formatDateForInput(new Date()),
+                    fecha_inicio: formatDateForInput(orden.fecha_inicio),
+                    fecha_fin: formatDateForInput(orden.fecha_fin)
+                });
+
+                if (orden.clave_programatica) {
+                    setClavesSeleccionadas(orden.clave_programatica.split(',').map(c => c.trim()).filter(Boolean));
+                }
+
+                if (orden.medio_transporte === 'Aéreo') {
+                    setUiTransporte('Aéreo');
+                } else if (orden.medio_transporte === 'Terrestre' && !orden.vehiculo_marca && !orden.vehiculo_placas) {
+                    setUiTransporte('Autobús');
+                } else {
+                    setUiTransporte('Vehículo');
+                }
+            } else {
+                Swal.fire('Error', 'No se pudo cargar la orden.', 'error').then(() => navigate('/'));
+            }
+        } catch (error) {
+            console.error("Error al cargar datos:", error);
+            Swal.fire('Error', 'Fallo de conexión al servidor.', 'error').then(() => navigate('/'));
+        } finally {
+            setLoading(false);
         }
+    };
 
-        if (cleanData.clave_programatica) { 
-            setClavesSeleccionadas(cleanData.clave_programatica.split(/, |  Y  /)); 
-        }
-        setFormData(cleanData);
-      })
-      .catch(err => { console.error(err); });
-  }, [id]);
+    fetchAllData();
+  }, [id, navigate]);
 
   useEffect(() => {
     const total = (parseFloat(formData.importe_combustible) || 0) + 
@@ -85,12 +102,16 @@ const EditarComision = () => {
     setFormData(prev => ({ ...prev, importe_total: total }));
   }, [formData.importe_combustible, formData.importe_otros, formData.importe_pasajes_aereos, formData.importe_pasajes, formData.importe_congresos, formData.importe_viaticos]);
 
-  const handleChange = (e) => { setFormData(prev => ({ ...prev, [e.target.name]: e.target.value })); };
-  
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
   const agregarClave = () => {
     if (!claveTemporal) return;
     if (!clavesSeleccionadas.includes(claveTemporal)) {
-        setClavesSeleccionadas([...clavesSeleccionadas, claveTemporal]); setClaveTemporal("");
+        setClavesSeleccionadas([...clavesSeleccionadas, claveTemporal]);
+        setClaveTemporal(""); 
     }
   };
 
@@ -146,22 +167,40 @@ const EditarComision = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (clavesSeleccionadas.length === 0) { Swal.fire('Atención', 'Agrega Clave Programática', 'warning'); return; }
-    
-    const dataToSend = { ...formData, clave_programatica: clavesSeleccionadas.join(', ') };
+    if (clavesSeleccionadas.length === 0) { Swal.fire('Atención', 'Agrega al menos una Clave Programática', 'warning'); return; }
+    const datosFinales = { ...formData, clave_programatica: clavesSeleccionadas.join(', ') };
 
     try {
-      const response = await fetch(`/api/ordenes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dataToSend) });
-      if (response.ok) { Swal.fire({ title: '¡Actualizado!', text: 'Comisión modificada.', icon: 'success' }).then(() => navigate('/')); } 
-      else { Swal.fire('Error', 'No se pudo actualizar.', 'error'); }
-    } catch (error) { Swal.fire('Error', 'Fallo de conexión', 'error'); }
+      // 🔴 AQUÍ USAMOS PUT PARA ACTUALIZAR
+      const response = await fetch(`/api/ordenes/${id}`, { 
+          method: 'PUT', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify(datosFinales) 
+      });
+      
+      if (response.ok) { 
+          Swal.fire({ title: '¡Actualizado!', text: 'Comisión guardada correctamente', icon: 'success' }).then(() => navigate('/')); 
+      } else { 
+          Swal.fire('Error', 'Error al guardar cambios', 'error'); 
+      }
+    } catch (error) { 
+        Swal.fire('Error', 'Fallo de conexión', 'error'); 
+    }
   };
 
+  if (loading) {
+      return (
+          <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mb-4"></div>
+              <p className="font-black text-blue-900 text-xs uppercase tracking-widest">Cargando datos...</p>
+          </div>
+      );
+  }
+
   return (
-    <div className="p-8 bg-gray-50 min-h-screen font-sans relative">
-       {/* MODAL CALCULADORA */}
+    <div className="p-4 md:p-8 bg-gray-50 min-h-screen font-sans relative">
        {showModalCuota && (
-            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
                 <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md border-t-4 border-blue-600">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="font-bold text-lg text-blue-900 flex items-center gap-2"><Calculator/> Asistente de Cuota Diaria</h3>
@@ -190,26 +229,26 @@ const EditarComision = () => {
             </div>
         )}
 
-       <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow border border-gray-200">
+       <div className="max-w-6xl mx-auto bg-white p-4 md:p-8 rounded-lg shadow border border-gray-200">
          <div className="flex items-center justify-between mb-6 border-b pb-4">
-            <h2 className="text-2xl font-bold text-blue-900">Editar Orden de Comisión #{id}</h2>
-            <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700"><ArrowLeft size={18}/> Volver</button>
+            <h2 className="text-xl md:text-2xl font-bold text-blue-900">Editar Orden de Comisión #{id}</h2>
+            <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm md:text-base"><ArrowLeft size={18}/> Volver</button>
          </div>
 
          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-indigo-50 p-4 rounded-md border border-indigo-100 flex items-center gap-4">
-                    <Globe className="text-indigo-600" size={24} />
+                    <Globe className="text-indigo-600 flex-shrink-0" size={24} />
                     <div className="w-full">
                         <label className="block text-xs font-bold text-indigo-800 mb-1">TIPO DE COMISIÓN</label>
                         <select name="tipo_comision" value={formData.tipo_comision} onChange={handleChange} className="w-full p-2 border rounded font-bold text-indigo-900 bg-white">
-                            <option value="Nacional">NACIONAL / ESTATAL (2 Firmas)</option>
-                            <option value="Internacional">INTERNACIONAL (4 Firmas)</option>
+                            <option value="Nacional">NACIONAL / ESTATAL</option>
+                            <option value="Internacional">INTERNACIONAL</option>
                         </select>
                     </div>
                 </div>
                 <div className="bg-gray-100 p-4 rounded-md border border-gray-200 flex items-center gap-4">
-                    <Calendar className="text-gray-600" size={24} />
+                    <Calendar className="text-gray-600 flex-shrink-0" size={24} />
                     <div className="w-full">
                         <label className="block text-xs font-bold text-gray-700 mb-1">FECHA DE ELABORACIÓN</label>
                         <input type="date" name="fecha_elaboracion" value={formData.fecha_elaboracion} onChange={handleChange} className="w-full p-2 border rounded font-bold text-gray-800" />
@@ -220,8 +259,6 @@ const EditarComision = () => {
             <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
                 <h3 className="text-sm font-bold text-blue-800 uppercase mb-3 flex items-center gap-2"><UserCheck size={18}/> 1. Datos del Comisionado</h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    
-                    {/* 🔴 NUEVO DROPDOWN ELEGANTE */}
                     <div className="md:col-span-2 relative">
                         <label className="block text-xs font-bold text-gray-700 mb-1">Nombre Completo</label>
                         <input 
@@ -264,16 +301,17 @@ const EditarComision = () => {
 
                     <div><label className="block text-xs font-bold text-gray-700 mb-1">R.F.C.</label><input name="rfc" value={formData.rfc} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Categoría</label><input name="categoria" value={formData.categoria} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
-                    <div className="md:col-span-2"><label className="block text-xs font-bold text-gray-700 mb-1">Adscripción</label><input name="adscripcion" value={formData.adscripcion} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
+                    <div className="md:col-span-4"><label className="block text-xs font-bold text-gray-700 mb-1">Adscripción</label><input name="adscripcion" value={formData.adscripcion} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
                     <h3 className="text-sm font-bold text-gray-800 uppercase mb-3">2. Datos del Viaje</h3>
                     <div className="space-y-3">
                         <div><label className="block text-xs font-bold text-gray-700 mb-1">Lugar</label><input name="lugar" value={formData.lugar} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
-                        <div className="grid grid-cols-2 gap-2">
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div><label className="block text-xs font-bold text-gray-700 mb-1">Fecha Inicio</label><input type="date" name="fecha_inicio" value={formData.fecha_inicio} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
                             <div><label className="block text-xs font-bold text-gray-700 mb-1">Hora Salida</label><input type="time" name="hora_salida" value={formData.hora_salida} onChange={handleChange} className="w-full p-2 border rounded" /></div>
                             <div><label className="block text-xs font-bold text-gray-700 mb-1">Fecha Fin</label><input type="date" name="fecha_fin" value={formData.fecha_fin} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
@@ -285,7 +323,7 @@ const EditarComision = () => {
 
                 <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
                     <h3 className="text-sm font-bold text-gray-800 uppercase mb-3 flex items-center gap-2">
-                       {uiTransporte === 'Aéreo' ? <Plane size={18}/> : uiTransporte === 'Autobús' ? <Bus size={18}/> : <Car size={18}/>} 3. Transporte
+                        {uiTransporte === 'Aéreo' ? <Plane size={18}/> : uiTransporte === 'Autobús' ? <Bus size={18}/> : <Car size={18}/>} 3. Transporte
                     </h3>
                     <div className="space-y-3">
                          <div>
@@ -307,7 +345,7 @@ const EditarComision = () => {
                                         ))}
                                     </select>
                                 </div>
-                                <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded border border-gray-200">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3 rounded border border-gray-200">
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Marca</label><input name="vehiculo_marca" value={formData.vehiculo_marca} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Modelo</label><input name="vehiculo_modelo" value={formData.vehiculo_modelo} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Placas</label><input name="vehiculo_placas" value={formData.vehiculo_placas} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
@@ -318,13 +356,13 @@ const EditarComision = () => {
                 </div>
             </div>
 
-            <div className="bg-orange-50 p-6 rounded-md border border-orange-200">
+            <div className="bg-orange-50 p-4 md:p-6 rounded-md border border-orange-200">
                 <h3 className="text-sm font-bold text-orange-900 uppercase mb-4 flex items-center gap-2"><Briefcase size={18}/> 4. Finanzas y Presupuesto</h3>
                 
                 <div className="mb-6 bg-white p-4 rounded border border-orange-200 shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
                         <label className="block text-xs font-bold text-gray-800">FÓRMULA DE CUOTA DIARIA (Texto que saldrá en el PDF)</label>
-                        <button type="button" onClick={()=>setShowModalCuota(true)} className="flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded font-bold hover:bg-indigo-200"><Calculator size={14}/> Usar Calculadora Mágica</button>
+                        <button type="button" onClick={()=>setShowModalCuota(true)} className="flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded font-bold hover:bg-indigo-200 w-full sm:w-auto justify-center"><Calculator size={14}/> Usar Calculadora Mágica</button>
                     </div>
                     <textarea name="cuota_diaria" value={formData.cuota_diaria} onChange={handleChange} rows="2" className="w-full p-2 border rounded font-mono text-sm text-gray-700 bg-gray-50 focus:bg-white" placeholder="Ej. 7 x $1,826.00&#10;½ x $949.52 = $13,731.52"></textarea>
                     <p className="text-[10px] text-gray-500 mt-1 italic">* Puedes escribir el texto directamente o usar la calculadora para armar la fórmula.</p>
@@ -332,30 +370,30 @@ const EditarComision = () => {
 
                 <div className="mb-4">
                     <label className="block text-xs font-bold text-orange-800 mb-1">Clave Programática</label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <select value={claveTemporal} onChange={(e) => setClaveTemporal(e.target.value)} className="w-full p-3 border border-orange-300 rounded bg-white text-gray-700 font-medium">
                             <option value="">-- Seleccione para agregar --</option>
                             {catalogoClaves.map((clave, index) => (
                                 <option key={index} value={clave.valor}>{clave.label} ({clave.valor})</option>
                             ))}
                         </select>
-                        <button type="button" onClick={agregarClave} className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded shadow flex items-center gap-2 font-bold transition-colors"><Plus size={20}/> Agregar</button>
+                        <button type="button" onClick={agregarClave} className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 sm:py-2 rounded shadow flex justify-center items-center gap-2 font-bold transition-colors w-full sm:w-auto"><Plus size={20}/> Agregar</button>
                     </div>
                 </div>
                 {clavesSeleccionadas.length > 0 && (
                     <div className="mb-6 bg-white border border-orange-200 rounded p-4 shadow-sm">
                         <div className="space-y-2">
                             {clavesSeleccionadas.map((clave, idx) => (
-                                <div key={idx} className="flex justify-between items-center bg-orange-50 p-2 rounded border border-orange-100">
-                                    <span className="text-sm font-bold text-gray-700">{clave}</span>
-                                    <button type="button" onClick={() => eliminarClave(clave)} className="text-red-500 hover:text-red-700"><Trash2 size={18}/></button>
+                                <div key={idx} className="flex justify-between items-center bg-orange-50 p-2 rounded border border-orange-100 break-all gap-2">
+                                    <span className="text-sm font-bold text-gray-700 leading-tight">{clave}</span>
+                                    <button type="button" onClick={() => eliminarClave(clave)} className="text-red-500 hover:text-red-700 p-1 flex-shrink-0"><Trash2 size={18}/></button>
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-orange-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pt-4 border-t border-orange-200">
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">26111 - Combustible</label><input type="number" step="0.01" name="importe_combustible" value={formData.importe_combustible} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">37111 - Pasajes Aéreos</label><input type="number" step="0.01" name="importe_pasajes_aereos" value={formData.importe_pasajes_aereos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">37211 - Pasajes Terrestres</label><input type="number" step="0.01" name="importe_pasajes" value={formData.importe_pasajes} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
@@ -364,15 +402,15 @@ const EditarComision = () => {
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">39202 - Otros Impuestos</label><input type="number" step="0.01" name="importe_otros" value={formData.importe_otros} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
                 </div>
 
-                <div className="mt-6 p-4 bg-orange-100 rounded border border-orange-300 flex justify-between items-center">
-                    <span className="font-bold text-orange-900 text-lg">IMPORTE TOTAL (SUMA DE TODO):</span>
-                    <span className="font-black text-2xl text-blue-900">{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(formData.importe_total)}</span>
+                <div className="mt-6 p-4 bg-orange-100 rounded border border-orange-300 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left gap-2 sm:gap-0">
+                    <span className="font-bold text-orange-900 text-lg">IMPORTE TOTAL ACORDADO:</span>
+                    <span className="font-black text-2xl md:text-3xl text-blue-900">{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(formData.importe_total)}</span>
                 </div>
             </div>
 
-            <div className="flex justify-end gap-4 mt-8 pt-4 border-t">
-              <button type="button" onClick={() => navigate('/')} className="px-4 py-2 border rounded hover:bg-gray-50">Cancelar</button>
-              <button type="submit" className="px-8 py-3 bg-blue-900 text-white rounded hover:bg-blue-800 flex items-center gap-2 font-bold shadow-lg transition-transform active:scale-95"><Save size={20}/> Actualizar Orden</button>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 md:gap-4 mt-8 pt-4 border-t">
+              <button type="button" onClick={() => navigate('/')} className="w-full sm:w-auto px-4 py-3 sm:py-2 border rounded hover:bg-gray-50 text-gray-700 font-bold">Cancelar</button>
+              <button type="submit" className="w-full sm:w-auto px-8 py-3 bg-blue-900 text-white rounded hover:bg-blue-800 flex justify-center items-center gap-2 font-bold shadow-lg transition-transform active:scale-95"><Save size={20}/> Guardar Cambios</button>
             </div>
          </form>
        </div>
