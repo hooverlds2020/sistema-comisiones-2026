@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Users, Shield, LogOut, User, Menu, X } from 'lucide-react';
+import { FileText, Users, Shield, LogOut, User, Menu, X, Car } from 'lucide-react';
 
 const Layout = ({ children, usuario, onLogout }) => {
   const location = useLocation();
@@ -9,27 +9,26 @@ const Layout = ({ children, usuario, onLogout }) => {
   const navLinks = [
     { path: '/', label: 'Oficios de Comisión', icon: <FileText size={18} /> },
     { path: '/personal', label: 'Personal', icon: <Users size={18} /> },
+    { path: '/vehiculos', label: 'Vehículos', icon: <Car size={18} /> },
     { path: '/usuarios', label: 'Usuarios', icon: <Shield size={18} /> },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      {/* BARRA DE NAVEGACIÓN SUPERIOR */}
       <nav className="bg-blue-900 text-white shadow-md z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             
-            {/* Logo y Nombre del Sistema */}
             <div className="flex items-center gap-3">
-              <div className="bg-white text-blue-900 font-black px-2 py-1 rounded text-xl tracking-widest">
-                CESMECA
+              {/* 🔴 Le quité el fondo blanco para que no se vea la caja que me marcaste */}
+              <div className="flex items-center">
+                 <img src="/logo-unicach.png" alt="UNICACH" className="h-10 w-auto object-contain" />
               </div>
               <span className="hidden md:block font-bold text-blue-100">
                 Panel Administrativo
               </span>
             </div>
 
-            {/* Menú de Escritorio */}
             <div className="hidden md:flex items-center space-x-4">
               {navLinks.map((link) => (
                 <Link
@@ -46,7 +45,6 @@ const Layout = ({ children, usuario, onLogout }) => {
               ))}
             </div>
 
-            {/* Usuario y Logout (Escritorio) */}
             <div className="hidden md:flex items-center gap-4 border-l border-blue-700 pl-4 ml-2">
               <div className="flex items-center gap-2 text-sm text-blue-100">
                 <User size={16} />
@@ -64,7 +62,6 @@ const Layout = ({ children, usuario, onLogout }) => {
               </button>
             </div>
 
-            {/* Botón Menú Móvil */}
             <div className="md:hidden flex items-center">
               <button onClick={() => setMenuAbierto(!menuAbierto)} className="p-2 text-blue-200 hover:text-white">
                 {menuAbierto ? <X size={24} /> : <Menu size={24} />}
@@ -73,7 +70,6 @@ const Layout = ({ children, usuario, onLogout }) => {
           </div>
         </div>
 
-        {/* Menú Móvil Desplegable */}
         {menuAbierto && (
           <div className="md:hidden bg-blue-800 border-t border-blue-700 pb-4">
             <div className="px-2 pt-2 pb-3 space-y-1">
@@ -103,7 +99,6 @@ const Layout = ({ children, usuario, onLogout }) => {
         )}
       </nav>
 
-      {/* ÁREA DE CONTENIDO DINÁMICO */}
       <main className="flex-1">
         {children}
       </main>

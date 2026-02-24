@@ -13,7 +13,6 @@ const Login = ({ onLogin }) => {
     setError(null);
 
     try {
-      // 🔴 AQUÍ LLAMAREMOS A NUESTRO BACKEND
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -23,7 +22,6 @@ const Login = ({ onLogin }) => {
       const data = await response.json();
 
       if (response.ok) {
-        // Guardamos la sesión en el navegador
         localStorage.setItem('usuarioActivo', JSON.stringify(data.user));
         onLogin(data.user);
       } else {
@@ -39,19 +37,14 @@ const Login = ({ onLogin }) => {
   return (
     <div className="min-h-screen flex bg-white font-sans">
       
-      {/* ==============================================
-         SECCIÓN IZQUIERDA (BRANDING) - Solo PC/Tablet
-         ============================================== */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-blue-900 overflow-hidden flex-col justify-between p-12 text-white">
-        
-        {/* FONDO DEGRADADO ELEGANTE */}
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900"></div>
 
-        {/* CONTENIDO SUPERIOR */}
-        <div className="relative z-10 mt-10">
-           {/* Si tienes un logo del CESMECA, la ruta iría aquí */}
-           <div className="h-20 w-auto mb-8 bg-white/10 rounded-lg p-4 inline-block backdrop-blur-sm border border-white/20">
-              <h1 className="text-3xl font-black tracking-widest uppercase">CESMECA</h1>
+        <div className="relative z-10 mt-8">
+           
+           {/* 🔴 Le quitamos el fondo blanco y dejamos el logo flotando libremente */}
+           <div className="mb-10 inline-block">
+              <img src="/logo-unicach.png" alt="Logo UNICACH" className="h-28 md:h-32 w-auto object-contain drop-shadow-2xl" />
            </div>
            
            <h1 className="text-4xl font-bold tracking-tight mb-4 leading-tight">
@@ -62,33 +55,28 @@ const Login = ({ onLogin }) => {
            </p>
         </div>
 
-        {/* CONTENIDO INFERIOR */}
         <div className="relative z-10 text-sm text-blue-200">
-          <p className="font-bold">© 2026 Universidad Autónoma de Chiapas</p>
+          <p className="font-bold">© 2026 Universidad Autónoma de Ciencias y Artes de Chiapas</p>
           <p className="opacity-60">Centro de Estudios Superiores de México y Centroamérica</p>
         </div>
       </div>
 
-
-      {/* ==============================================
-         SECCIÓN DERECHA (FORMULARIO)
-         ============================================== */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 lg:p-24 bg-gray-50 lg:bg-white shadow-[-20px_0_30px_-15px_rgba(0,0,0,0.1)] z-10">
         <div className="w-full max-w-sm space-y-8">
           
-          {/* HEADER MÓVIL */}
-          <div className="lg:hidden text-center mb-8">
-             <h2 className="text-3xl font-black text-blue-900 uppercase tracking-widest">CESMECA</h2>
+          <div className="lg:hidden text-center mb-8 flex flex-col items-center">
+             {/* 🔴 También sin fondo blanco en la versión de celular */}
+             <div className="mb-5">
+               <img src="/logo-unicach.png" alt="Logo UNICACH" className="h-24 w-auto object-contain drop-shadow-md" />
+             </div>
              <h3 className="text-xl font-bold text-gray-800 mt-2">Control de Comisiones</h3>
           </div>
 
-          {/* HEADER DE ESCRITORIO */}
           <div className="hidden lg:block">
             <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Iniciar Sesión</h2>
             <p className="text-gray-500 mt-2">Ingresa tus credenciales para acceder al sistema.</p>
           </div>
 
-          {/* MENSAJE DE ERROR */}
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-md">
               <div className="flex">
@@ -99,13 +87,9 @@ const Login = ({ onLogin }) => {
             </div>
           )}
 
-          {/* FORMULARIO */}
           <form onSubmit={handleLogin} className="space-y-6">
-            
             <div className="space-y-1">
-              <label className="block text-sm font-bold text-gray-700">
-                Usuario
-              </label>
+              <label className="block text-sm font-bold text-gray-700">Usuario</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-gray-400" />
@@ -122,9 +106,7 @@ const Login = ({ onLogin }) => {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-sm font-bold text-gray-700">
-                Contraseña
-              </label>
+              <label className="block text-sm font-bold text-gray-700">Contraseña</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />

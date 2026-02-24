@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout'; // 🔴 Importamos el Layout
+import Layout from './components/Layout';
 import ComisionesTable from './components/ComisionesTable';
 import CrearComision from './components/CrearComision';
 import EditarComision from './components/EditarComision';
 import DetalleOrden from './components/DetalleOrden';
 import Login from './components/Login';
+import PersonalTable from './components/PersonalTable';
+import VehiculosTable from './components/VehiculosTable'; // 🔴 Importamos Vehículos
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -31,26 +33,22 @@ function App() {
             <Route path="*" element={<Navigate to="/login" />} />
           </>
         ) : (
-          /* Envolvemos todas las pantallas protegidas dentro del Layout */
           <Route 
             path="*" 
             element={
               <Layout usuario={usuario} onLogout={handleLogout}>
                 <Routes>
-                  {/* Módulo de Oficios (El principal) */}
+                  {/* Día a día */}
                   <Route path="/" element={<ComisionesTable />} />
                   <Route path="/crear" element={<CrearComision />} />
                   <Route path="/editar/:id" element={<EditarComision />} />
                   <Route path="/orden/:id" element={<DetalleOrden />} />
                   
-                  {/* Módulos Nuevos (Por construir) */}
-                  <Route path="/personal" element={
-                    <div className="p-8 text-center mt-20">
-                      <h2 className="text-3xl font-bold text-gray-400">Módulo de Personal en construcción 🚧</h2>
-                      <p className="text-gray-500 mt-2">Aquí gestionaremos a los 80 trabajadores del CESMECA.</p>
-                    </div>
-                  } />
+                  {/* Catálogos */}
+                  <Route path="/personal" element={<PersonalTable />} />
+                  <Route path="/vehiculos" element={<VehiculosTable />} /> {/* 🔴 Ruta de Vehículos */}
                   
+                  {/* Configuración */}
                   <Route path="/usuarios" element={
                     <div className="p-8 text-center mt-20">
                       <h2 className="text-3xl font-bold text-gray-400">Módulo de Usuarios en construcción 🚧</h2>
