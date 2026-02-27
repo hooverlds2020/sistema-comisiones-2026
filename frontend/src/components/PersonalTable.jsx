@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search, X, Save, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, X, Save, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 const PersonalTable = () => {
   const [personal, setPersonal] = useState([]);
@@ -7,9 +8,10 @@ const PersonalTable = () => {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [form, setForm] = useState({ id: null, nombre: '', rfc: '', categoria: '', adscripcion: 'CESMECA' });
 
-  // 🔴 Estados para la Paginación
   const [paginaActual, setPaginaActual] = useState(1);
-  const itemsPorPagina = 10; // Lo recomendado para no saturar la pantalla
+  const itemsPorPagina = 10;
+
+  const [empleadoAEliminar, setEmpleadoAEliminar] = useState(null);
 
   const cargarPersonal = () => {
     fetch('/api/personal')
@@ -19,29 +21,43 @@ const PersonalTable = () => {
   };
 
   useEffect(() => { cargarPersonal(); }, []);
-
-  // 🔴 Si el usuario escribe en el buscador, regresamos a la página 1 automáticamente
-  useEffect(() => {
-    setPaginaActual(1);
-  }, [busqueda]);
+  useEffect(() => { setPaginaActual(1); }, [busqueda]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const url = form.id ? `/api/personal/${form.id}` : '/api/personal';
     const method = form.id ? 'PUT' : 'POST';
 
-    await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    });
-    setMostrarModal(false);
-    cargarPersonal();
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+
+      if (response.ok) {
+        Swal.fire({
+            title: '¡Guardado!',
+            text: 'El empleado se registró correctamente.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        setMostrarModal(false);
+        cargarPersonal();
+      } else {
+        const errorText = await response.text();
+        Swal.fire('Error', `No se pudo guardar: ${errorText}`, 'error');
+      }
+    } catch (error) {
+      Swal.fire('Error de conexión', 'No se pudo contactar al servidor.', 'error');
+    }
   };
 
-  const eliminar = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar este registro?')) {
-      await fetch(`/api/personal/${id}`, { method: 'DELETE' });
+  const ejecutarEliminacion = async () => {
+    if (empleadoAEliminar) {
+      await fetch(`/api/personal/${empleadoAEliminar.id}`, { method: 'DELETE' });
+      setEmpleadoAEliminar(null);
       cargarPersonal();
     }
   };
@@ -55,7 +71,6 @@ const PersonalTable = () => {
     setMostrarModal(true);
   };
 
-  // 🔴 Lógica matemática para la paginación
   const filtrados = personal.filter(p => p.nombre?.toLowerCase().includes(busqueda.toLowerCase()));
   const totalPaginas = Math.ceil(filtrados.length / itemsPorPagina);
   const indiceUltimoItem = paginaActual * itemsPorPagina;
@@ -66,7 +81,6 @@ const PersonalTable = () => {
     <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         
-        {/* Cabecera */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-white p-6 rounded-xl shadow-sm border border-blue-100">
           <div>
             <h1 className="text-xl md:text-2xl font-black text-blue-900 tracking-tight">Catálogo de Personal</h1>
@@ -77,7 +91,6 @@ const PersonalTable = () => {
           </button>
         </div>
 
-        {/* Buscador */}
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
           <input 
@@ -87,7 +100,6 @@ const PersonalTable = () => {
           />
         </div>
 
-        {/* Tabla */}
         <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden flex flex-col">
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left border-collapse min-w-[800px]">
@@ -108,7 +120,7 @@ const PersonalTable = () => {
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
                         <button onClick={() => abrirModal(p)} className="text-orange-500 hover:bg-orange-100 p-1.5 rounded-md" title="Editar"><Edit size={18} /></button>
-                        <button onClick={() => eliminar(p.id)} className="text-red-600 hover:bg-red-100 p-1.5 rounded-md" title="Eliminar"><Trash2 size={18} /></button>
+                        <button onClick={() => setEmpleadoAEliminar(p)} className="text-red-600 hover:bg-red-100 p-1.5 rounded-md" title="Eliminar"><Trash2 size={18} /></button>
                       </div>
                     </td>
                   </tr>
@@ -124,7 +136,6 @@ const PersonalTable = () => {
             </table>
           </div>
 
-          {/* 🔴 Controles de Paginación */}
           {totalPaginas > 1 && (
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <span className="text-sm text-gray-500 font-medium">
@@ -155,7 +166,6 @@ const PersonalTable = () => {
         </div>
       </div>
 
-      {/* MODAL PARA AGREGAR/EDITAR */}
       {mostrarModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -168,10 +178,24 @@ const PersonalTable = () => {
                 <label className="block text-sm font-bold text-gray-700 mb-1">Nombre Completo</label>
                 <input required type="text" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 uppercase" value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value.toUpperCase()})} />
               </div>
+              
+              {/* 🔴 AQUÍ ESTÁ EL CANDADO DEL RFC (PERSONA FÍSICA) */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">R.F.C.</label>
-                <input required type="text" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 uppercase" value={form.rfc} onChange={e => setForm({...form, rfc: e.target.value.toUpperCase()})} />
+                <label className="block text-sm font-bold text-gray-700 mb-1">R.F.C. (Persona Física)</label>
+                <input 
+                  required 
+                  type="text" 
+                  maxLength={13} 
+                  minLength={13}
+                  pattern="^[A-Z&Ñ]{4}[0-9]{6}[A-Z0-9]{3}$"
+                  title="El RFC para persona física debe tener exactamente 13 caracteres: 4 letras iniciales, 6 números (AAMMDD) y 3 caracteres de homoclave."
+                  placeholder="Ej. GGSJ801220TNA"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 uppercase font-mono" 
+                  value={form.rfc} 
+                  onChange={e => setForm({...form, rfc: e.target.value.toUpperCase().replace(/[^A-Z0-9Ñ&]/g, '')})} 
+                />
               </div>
+
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">Categoría</label>
                 <input required type="text" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 uppercase" value={form.categoria} onChange={e => setForm({...form, categoria: e.target.value.toUpperCase()})} />
@@ -181,6 +205,30 @@ const PersonalTable = () => {
                 <button type="submit" className="flex-1 bg-blue-700 hover:bg-blue-800 text-white font-black py-3 rounded-lg transition-colors flex justify-center items-center gap-2"><Save size={20} /> Guardar</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {empleadoAEliminar && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 text-center space-y-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="text-red-600" size={32} />
+              </div>
+              <h3 className="text-xl font-black text-gray-800">¿Eliminar Empleado?</h3>
+              <p className="text-gray-500 font-medium text-sm">
+                Estás a punto de eliminar a <span className="font-bold text-gray-900">{empleadoAEliminar.nombre}</span> del catálogo. Esta acción no se puede deshacer.
+              </p>
+              <div className="pt-4 flex gap-3">
+                <button onClick={() => setEmpleadoAEliminar(null)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-lg transition-colors">
+                  Cancelar
+                </button>
+                <button onClick={ejecutarEliminacion} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-lg transition-colors flex justify-center items-center gap-2">
+                  <Trash2 size={20} /> Eliminar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

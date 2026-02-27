@@ -49,7 +49,7 @@ const EditarComision = () => {
             const [resPersonal, resVehiculos, resClaves, resOrden] = await Promise.all([
                 fetch('/api/personal'),
                 fetch('/api/vehiculos'),
-                fetch('/api/claves'),
+                fetch('/api/claves-programaticas'), // Ajuste de ruta de catálogo (antes decía claves)
                 fetch(`/api/ordenes/${id}`)
             ]);
 
@@ -171,7 +171,6 @@ const EditarComision = () => {
     const datosFinales = { ...formData, clave_programatica: clavesSeleccionadas.join(', ') };
 
     try {
-      // 🔴 AQUÍ USAMOS PUT PARA ACTUALIZAR
       const response = await fetch(`/api/ordenes/${id}`, { 
           method: 'PUT', 
           headers: { 'Content-Type': 'application/json' }, 
@@ -179,7 +178,16 @@ const EditarComision = () => {
       });
       
       if (response.ok) { 
-          Swal.fire({ title: '¡Actualizado!', text: 'Comisión guardada correctamente', icon: 'success' }).then(() => navigate('/')); 
+          Swal.fire({ 
+              title: '¡Actualizado!', 
+              text: 'Cambios guardados correctamente', 
+              icon: 'success',
+              timer: 1500,
+              showConfirmButton: false
+          }).then(() => {
+              // 🔴 AQUÍ ESTÁ LA MAGIA: Regresar a la tabla principal
+              navigate('/', { replace: true });
+          }); 
       } else { 
           Swal.fire('Error', 'Error al guardar cambios', 'error'); 
       }
@@ -374,7 +382,7 @@ const EditarComision = () => {
                         <select value={claveTemporal} onChange={(e) => setClaveTemporal(e.target.value)} className="w-full p-3 border border-orange-300 rounded bg-white text-gray-700 font-medium">
                             <option value="">-- Seleccione para agregar --</option>
                             {catalogoClaves.map((clave, index) => (
-                                <option key={index} value={clave.valor}>{clave.label} ({clave.valor})</option>
+                                <option key={index} value={clave.clave}>{clave.clave} ({clave.descripcion})</option>
                             ))}
                         </select>
                         <button type="button" onClick={agregarClave} className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 sm:py-2 rounded shadow flex justify-center items-center gap-2 font-bold transition-colors w-full sm:w-auto"><Plus size={20}/> Agregar</button>

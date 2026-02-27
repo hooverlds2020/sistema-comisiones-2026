@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Users, Shield, LogOut, User, Menu, X, Car } from 'lucide-react';
+import { 
+  FileText, Users, Shield, LogOut, User, Menu, X, 
+  Car, UserCheck, Layers, Wallet, Settings 
+} from 'lucide-react';
 
 const Layout = ({ children, usuario, onLogout }) => {
   const location = useLocation();
   const [menuAbierto, setMenuAbierto] = useState(false);
 
+  // 🔴 Agregamos la ruta de Configuración al listado
   const navLinks = [
-    { path: '/', label: 'Oficios de Comisión', icon: <FileText size={18} /> },
+    { path: '/', label: 'Oficios', icon: <FileText size={18} /> },
     { path: '/personal', label: 'Personal', icon: <Users size={18} /> },
     { path: '/vehiculos', label: 'Vehículos', icon: <Car size={18} /> },
+    { path: '/autoridades', label: 'Autoridades', icon: <UserCheck size={18} /> },
+    { path: '/claves-programaticas', label: 'Programáticas', icon: <Layers size={18} /> },
+    { path: '/claves-presupuestales', label: 'Presupuestos', icon: <Wallet size={18} /> },
     { path: '/usuarios', label: 'Usuarios', icon: <Shield size={18} /> },
+    { path: '/configuracion', label: 'Configuración', icon: <Settings size={18} /> },
   ];
 
   return (
@@ -20,27 +28,23 @@ const Layout = ({ children, usuario, onLogout }) => {
           <div className="flex justify-between h-16 items-center">
             
             <div className="flex items-center gap-3">
-              {/* 🔴 Le quité el fondo blanco para que no se vea la caja que me marcaste */}
               <div className="flex items-center">
                  <img src="/logo-unicach.png" alt="UNICACH" className="h-10 w-auto object-contain" />
               </div>
-              <span className="hidden md:block font-bold text-blue-100">
-                Panel Administrativo
-              </span>
             </div>
 
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md font-bold text-sm transition-colors ${
+                  className={`flex items-center gap-1.5 px-2 lg:px-3 py-2 rounded-md font-bold text-xs lg:text-sm transition-colors ${
                     location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path))
                       ? 'bg-blue-800 text-white shadow-inner'
                       : 'text-blue-200 hover:bg-blue-800 hover:text-white'
                   }`}
                 >
-                  {link.icon} {link.label}
+                  {link.icon} <span className="hidden lg:inline">{link.label}</span><span className="lg:hidden">{link.label.substring(0,4)}.</span>
                 </Link>
               ))}
             </div>

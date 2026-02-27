@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft, Briefcase, UserCheck, Globe, Calendar, Car, Bus, Plane, Plus, Trash2, Calculator, X } from 'lucide-react';
+import { Save, ArrowLeft, Briefcase, UserCheck, Globe, Calendar, Car, Bus, Plane, Plus, Trash2, Calculator, X, RefreshCw } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const CrearComision = () => {
@@ -15,33 +15,75 @@ const CrearComision = () => {
   const [claveTemporal, setClaveTemporal] = useState("");
 
   const [showDropdown, setShowDropdown] = useState(false);
-
   const [showModalCuota, setShowModalCuota] = useState(false);
   const [calcDias, setCalcDias] = useState("");
   const [calcMonto, setCalcMonto] = useState("");
   const [calcMedios, setCalcMedios] = useState("");
   const [calcMontoMedio, setCalcMontoMedio] = useState("");
 
-  const [formData, setFormData] = useState({
-    fecha_elaboracion: new Date().toISOString().split('T')[0],
-    tipo_comision: 'Nacional', 
-    comisionado: '', rfc: '', categoria: '', adscripcion: '',
-    lugar: '', motivo: '', fecha_inicio: '', fecha_fin: '',
-    hora_salida: '', hora_regreso: '', 
-    medio_transporte: 'Terrestre', 
-    vehiculo_marca: '', vehiculo_modelo: '', vehiculo_placas: '',
-    cuota_diaria: '', 
-    importe_combustible: 0, importe_otros: 0, importe_pasajes_aereos: 0,    
-    importe_pasajes: 0, importe_congresos: 0, importe_viaticos: 0,          
-    importe_total: 0, estatus: 'Borrador'
+  // 1. CARGA INTELIGENTE DESDE EL DISCO DURO (AUTOGUARDADO)
+  const [formData, setFormData] = useState(() => {
+    const borradorGuardado = localStorage.getItem('borrador_comision');
+    if (borradorGuardado) {
+      const parsedBorrador = JSON.parse(borradorGuardado);
+      // Recuperar las claves seleccionadas del borrador
+      if (parsedBorrador.clave_programatica) {
+          setClavesSeleccionadas(parsedBorrador.clave_programatica.split(', ').filter(c => c));
+      }
+      return parsedBorrador;
+    }
+    // Si no hay borrador, cargamos los valores por defecto
+    return {
+      fecha_elaboracion: new Date().toISOString().split('T')[0],
+      tipo_comision: 'Nacional', 
+      comisionado: '', rfc: '', categoria: '', adscripcion: '',
+      lugar: '', motivo: '', fecha_inicio: '', fecha_fin: '',
+      hora_salida: '', hora_regreso: '', 
+      medio_transporte: 'Terrestre', 
+      vehiculo_marca: '', vehiculo_modelo: '', vehiculo_placas: '',
+      cuota_diaria: '', 
+      importe_combustible: 0, importe_otros: 0, importe_pasajes_aereos: 0,    
+      importe_pasajes: 0, importe_congresos: 0, importe_viaticos: 0,          
+      importe_total: 0, estatus: 'Borrador'
+    };
   });
 
+  // 2. GUARDAR EN EL DISCO DURO CADA VEZ QUE EL USUARIO ESCRIBE ALGO
   useEffect(() => {
-    fetch('/api/personal').then(res => res.json()).then(data => setCatalogoPersonal(data)).catch(console.error);
-    fetch('/api/vehiculos').then(res => res.json()).then(data => setCatalogoVehiculos(data)).catch(console.error);
-    fetch('/api/claves').then(res => res.json()).then(data => setCatalogoClaves(data)).catch(console.error);
+    const datosARespaldar = { ...formData, clave_programatica: clavesSeleccionadas.join(', ') };
+    localStorage.setItem('borrador_comision', JSON.stringify(datosARespaldar));
+  }, [formData, clavesSeleccionadas]);
+
+  // Protección contra caídas de internet en los catálogos
+  useEffect(() => {
+    const cargarCatalogos = async () => {
+      try {
+        const [resPersonal, resVehiculos, resClaves] = await Promise.all([
+          fetch('/api/personal').catch(() => null),
+          fetch('/api/vehiculos').catch(() => null),
+          fetch('/api/claves-programaticas').catch(() => null)
+        ]);
+
+        if (!resPersonal || !resVehiculos || !resClaves || !resPersonal.ok || !resVehiculos.ok || !resClaves.ok) {
+            throw new Error("Fallo de conexión a internet");
+        }
+
+        setCatalogoPersonal(await resPersonal.json());
+        setCatalogoVehiculos(await resVehiculos.json());
+        setCatalogoClaves(await resClaves.json());
+      } catch (error) {
+        Swal.fire({
+          title: 'Conexión Inestable',
+          text: 'Hubo un bajón de internet y no se cargaron los catálogos. Por favor, presiona F5 para intentar de nuevo. ¡Tus datos tecleados están a salvo!',
+          icon: 'warning',
+          confirmButtonColor: '#1e3a8a'
+        });
+      }
+    };
+    cargarCatalogos();
   }, []);
 
+  // Calculadora automática de totales
   useEffect(() => {
     const total = (parseFloat(formData.importe_combustible) || 0) + 
                   (parseFloat(formData.importe_otros) || 0) + 
@@ -115,6 +157,25 @@ const CrearComision = () => {
       setShowModalCuota(false);
   };
 
+  // Función para vaciar el borrador manualmente si el usuario quiere empezar de cero
+  const limpiarBorrador = () => {
+    Swal.fire({
+      title: '¿Limpiar formulario?',
+      text: "Se borrarán todos los datos que has capturado.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, borrar todo',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem('borrador_comision');
+        window.location.reload(); // Recarga la página para tener el formulario en blanco
+      }
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (clavesSeleccionadas.length === 0) { Swal.fire('Atención', 'Agrega al menos una Clave Programática', 'warning'); return; }
@@ -122,13 +183,26 @@ const CrearComision = () => {
 
     try {
       const response = await fetch('/api/ordenes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosFinales) });
-      if (response.ok) { Swal.fire({ title: '¡Guardado!', text: 'Comisión registrada', icon: 'success' }).then(() => navigate('/')); } 
+      if (response.ok) { 
+          // 🔴 3. SI SE GUARDÓ EXITOSAMENTE, BORRAMOS EL RESPALDO LOCAL Y REDIRIGIMOS A LA TABLA PRINCIPAL
+          localStorage.removeItem('borrador_comision');
+
+          Swal.fire({ 
+              title: '¡Guardado!', 
+              text: 'Comisión registrada con éxito', 
+              icon: 'success',
+              timer: 1500,
+              showConfirmButton: false
+          }).then(() => {
+              // 🔴 AQUÍ ESTÁ EL AJUSTE: Ahora regresa al listado principal
+              navigate('/', { replace: true }); 
+          }); 
+      } 
       else { Swal.fire('Error', 'Error al guardar', 'error'); }
     } catch (error) { Swal.fire('Error', 'Fallo de conexión', 'error'); }
   };
 
   return (
-    // 🔴 RESPONSIVE: p-4 en móvil, p-8 en escritorio
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen font-sans relative">
        {showModalCuota && (
             <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
@@ -160,11 +234,15 @@ const CrearComision = () => {
             </div>
         )}
 
-       {/* 🔴 RESPONSIVE: p-4 en móvil, p-8 en escritorio */}
        <div className="max-w-6xl mx-auto bg-white p-4 md:p-8 rounded-lg shadow border border-gray-200">
          <div className="flex items-center justify-between mb-6 border-b pb-4">
             <h2 className="text-xl md:text-2xl font-bold text-blue-900">Nueva Orden de Comisión</h2>
-            <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm md:text-base"><ArrowLeft size={18}/> Volver</button>
+            <div className="flex items-center gap-3">
+              <button onClick={limpiarBorrador} className="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm font-bold bg-red-50 px-3 py-1 rounded border border-red-200">
+                <RefreshCw size={14}/> Limpiar
+              </button>
+              <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm md:text-base"><ArrowLeft size={18}/> Volver</button>
+            </div>
          </div>
 
          <form onSubmit={handleSubmit} className="space-y-6">
@@ -173,7 +251,6 @@ const CrearComision = () => {
                     <Globe className="text-indigo-600 flex-shrink-0" size={24} />
                     <div className="w-full">
                         <label className="block text-xs font-bold text-indigo-800 mb-1">TIPO DE COMISIÓN</label>
-                        {/* 🔴 TEXTOS LIMPIOS: Ya no dice el número de firmas para evitar confusiones */}
                         <select name="tipo_comision" value={formData.tipo_comision} onChange={handleChange} className="w-full p-2 border rounded font-bold text-indigo-900 bg-white">
                             <option value="Nacional">NACIONAL / ESTATAL</option>
                             <option value="Internacional">INTERNACIONAL</option>
@@ -243,8 +320,6 @@ const CrearComision = () => {
                     <h3 className="text-sm font-bold text-gray-800 uppercase mb-3">2. Datos del Viaje</h3>
                     <div className="space-y-3">
                         <div><label className="block text-xs font-bold text-gray-700 mb-1">Lugar</label><input name="lugar" value={formData.lugar} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
-                        
-                        {/* 🔴 RESPONSIVE: En móviles se apilan, en sm y superior se ponen lado a lado */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div><label className="block text-xs font-bold text-gray-700 mb-1">Fecha Inicio</label><input type="date" name="fecha_inicio" value={formData.fecha_inicio} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
                             <div><label className="block text-xs font-bold text-gray-700 mb-1">Hora Salida</label><input type="time" name="hora_salida" value={formData.hora_salida} onChange={handleChange} className="w-full p-2 border rounded" /></div>
@@ -279,7 +354,6 @@ const CrearComision = () => {
                                         ))}
                                     </select>
                                 </div>
-                                {/* 🔴 RESPONSIVE: En móviles se apilan los 3 campos, en sm se ponen en columnas */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3 rounded border border-gray-200">
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Marca</label><input name="vehiculo_marca" value={formData.vehiculo_marca} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Modelo</label><input name="vehiculo_modelo" value={formData.vehiculo_modelo} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
@@ -295,13 +369,11 @@ const CrearComision = () => {
                 <h3 className="text-sm font-bold text-orange-900 uppercase mb-4 flex items-center gap-2"><Briefcase size={18}/> 4. Finanzas y Presupuesto</h3>
                 
                 <div className="mb-6 bg-white p-4 rounded border border-orange-200 shadow-sm">
-                    {/* 🔴 RESPONSIVE: Botón de calculadora salta a la siguiente línea en móviles */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
-                        <label className="block text-xs font-bold text-gray-800">FÓRMULA DE CUOTA DIARIA (Texto que saldrá en el PDF)</label>
+                        <label className="block text-xs font-bold text-gray-800">FÓRMULA DE CUOTA DIARIA</label>
                         <button type="button" onClick={()=>setShowModalCuota(true)} className="flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded font-bold hover:bg-indigo-200 w-full sm:w-auto justify-center"><Calculator size={14}/> Usar Calculadora Mágica</button>
                     </div>
                     <textarea name="cuota_diaria" value={formData.cuota_diaria} onChange={handleChange} rows="2" className="w-full p-2 border rounded font-mono text-sm text-gray-700 bg-gray-50 focus:bg-white" placeholder="Ej. 7 x $1,826.00&#10;½ x $949.52 = $13,731.52"></textarea>
-                    <p className="text-[10px] text-gray-500 mt-1 italic">* Puedes escribir el texto directamente o usar la calculadora para armar la fórmula.</p>
                 </div>
 
                 <div className="mb-4">
@@ -310,7 +382,7 @@ const CrearComision = () => {
                         <select value={claveTemporal} onChange={(e) => setClaveTemporal(e.target.value)} className="w-full p-3 border border-orange-300 rounded bg-white text-gray-700 font-medium">
                             <option value="">-- Seleccione para agregar --</option>
                             {catalogoClaves.map((clave, index) => (
-                                <option key={index} value={clave.valor}>{clave.label} ({clave.valor})</option>
+                                <option key={index} value={clave.clave}>{clave.clave} ({clave.descripcion})</option>
                             ))}
                         </select>
                         <button type="button" onClick={agregarClave} className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 sm:py-2 rounded shadow flex justify-center items-center gap-2 font-bold transition-colors w-full sm:w-auto"><Plus size={20}/> Agregar</button>
@@ -330,25 +402,23 @@ const CrearComision = () => {
                 )}
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pt-4 border-t border-orange-200">
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">26111 - Combustible</label><input type="number" step="0.01" name="importe_combustible" value={formData.importe_combustible} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37111 - Pasajes Aéreos</label><input type="number" step="0.01" name="importe_pasajes_aereos" value={formData.importe_pasajes_aereos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37211 - Pasajes Terrestres</label><input type="number" step="0.01" name="importe_pasajes" value={formData.importe_pasajes} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37511 - Viáticos (Monto Real Acordado)</label><input type="number" step="0.01" name="importe_viaticos" value={formData.importe_viaticos} onChange={handleChange} className="w-full pl-6 p-2 border rounded border-blue-400 bg-blue-50 focus:bg-white" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">38301 - Congresos y Conv.</label><input type="number" step="0.01" name="importe_congresos" value={formData.importe_congresos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">39202 - Otros Impuestos</label><input type="number" step="0.01" name="importe_otros" value={formData.importe_otros} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">26111 - Combustible</label><input type="number" step="0.01" name="importe_combustible" value={formData.importe_combustible} onChange={handleChange} className="w-full p-2 border rounded" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37111 - Pasajes Aéreos</label><input type="number" step="0.01" name="importe_pasajes_aereos" value={formData.importe_pasajes_aereos} onChange={handleChange} className="w-full p-2 border rounded bg-white" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37211 - Pasajes Terrestres</label><input type="number" step="0.01" name="importe_pasajes" value={formData.importe_pasajes} onChange={handleChange} className="w-full p-2 border rounded" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37511 - Viáticos</label><input type="number" step="0.01" name="importe_viaticos" value={formData.importe_viaticos} onChange={handleChange} className="w-full p-2 border rounded border-blue-400 bg-blue-50 focus:bg-white" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">38301 - Congresos y Conv.</label><input type="number" step="0.01" name="importe_congresos" value={formData.importe_congresos} onChange={handleChange} className="w-full p-2 border rounded bg-white" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">39202 - Otros Impuestos</label><input type="number" step="0.01" name="importe_otros" value={formData.importe_otros} onChange={handleChange} className="w-full p-2 border rounded" /></div>
                 </div>
 
-                {/* 🔴 RESPONSIVE: El cuadro del total se adapta y centra en móviles */}
                 <div className="mt-6 p-4 bg-orange-100 rounded border border-orange-300 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left gap-2 sm:gap-0">
                     <span className="font-bold text-orange-900 text-lg">IMPORTE TOTAL ACORDADO:</span>
                     <span className="font-black text-2xl md:text-3xl text-blue-900">{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(formData.importe_total)}</span>
                 </div>
             </div>
 
-            {/* 🔴 RESPONSIVE: Botones abajo invertidos en móvil (Guardar arriba, Cancelar abajo) y anchos al 100% */}
             <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 md:gap-4 mt-8 pt-4 border-t">
               <button type="button" onClick={() => navigate('/')} className="w-full sm:w-auto px-4 py-3 sm:py-2 border rounded hover:bg-gray-50 text-gray-700 font-bold">Cancelar</button>
-              <button type="submit" className="w-full sm:w-auto px-8 py-3 bg-blue-900 text-white rounded hover:bg-blue-800 flex justify-center items-center gap-2 font-bold shadow-lg transition-transform active:scale-95"><Save size={20}/> Guardar Orden</button>
+              <button type="submit" className="w-full sm:w-auto px-8 py-3 bg-blue-900 text-white rounded hover:bg-blue-800 flex justify-center items-center gap-2 font-bold shadow-lg transition-transform active:scale-95"><Save size={20}/> Guardar Cambios</button>
             </div>
          </form>
        </div>

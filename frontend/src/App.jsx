@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ComisionesTable from './components/ComisionesTable';
@@ -7,17 +7,19 @@ import EditarComision from './components/EditarComision';
 import DetalleOrden from './components/DetalleOrden';
 import Login from './components/Login';
 import PersonalTable from './components/PersonalTable';
-import VehiculosTable from './components/VehiculosTable'; // 🔴 Importamos Vehículos
+import VehiculosTable from './components/VehiculosTable';
+import AutoridadesTable from './components/AutoridadesTable';
+import ClavesProgramaticasTable from './components/ClavesProgramaticasTable';
+import ClavesPresupuestalesTable from './components/ClavesPresupuestalesTable';
+import UsuariosTable from './components/UsuariosTable';
+import ConfiguracionSistema from './components/ConfiguracionSistema';
 
 function App() {
-  const [usuario, setUsuario] = useState(null);
-
-  useEffect(() => {
+  // 🔴 CORRECCIÓN: Leemos la sesión al instante para evitar el "parpadeo" y que te saque de la ruta
+  const [usuario, setUsuario] = useState(() => {
     const usuarioGuardado = localStorage.getItem('usuarioActivo');
-    if (usuarioGuardado) {
-      setUsuario(JSON.parse(usuarioGuardado));
-    }
-  }, []);
+    return usuarioGuardado ? JSON.parse(usuarioGuardado) : null;
+  });
 
   const handleLogout = () => {
     localStorage.removeItem('usuarioActivo');
@@ -46,14 +48,14 @@ function App() {
                   
                   {/* Catálogos */}
                   <Route path="/personal" element={<PersonalTable />} />
-                  <Route path="/vehiculos" element={<VehiculosTable />} /> {/* 🔴 Ruta de Vehículos */}
+                  <Route path="/vehiculos" element={<VehiculosTable />} />
+                  <Route path="/autoridades" element={<AutoridadesTable />} />
+                  <Route path="/claves-programaticas" element={<ClavesProgramaticasTable />} />
+                  <Route path="/claves-presupuestales" element={<ClavesPresupuestalesTable />} />
                   
                   {/* Configuración */}
-                  <Route path="/usuarios" element={
-                    <div className="p-8 text-center mt-20">
-                      <h2 className="text-3xl font-bold text-gray-400">Módulo de Usuarios en construcción 🚧</h2>
-                    </div>
-                  } />
+                  <Route path="/usuarios" element={<UsuariosTable />} />
+		  <Route path="/configuracion" element={<ConfiguracionSistema />} />  
                 </Routes>
               </Layout>
             } 

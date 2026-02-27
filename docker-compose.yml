@@ -28,8 +28,14 @@ services:
       - DB_PASS=${POSTGRES_PASSWORD}
       - DB_NAME=${POSTGRES_DB}
       - PORT=5000
+      # 🔴 Aquí inyectamos las llaves de Telegram desde el .env
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
     depends_on:
       - db
+    volumes:
+      # 🔴 El backend guardará las imágenes aquí
+      - membretes_data:/app/uploads 
     networks:
       - internal-net
       - web
@@ -41,8 +47,15 @@ services:
     restart: always
     depends_on:
       - api
+    volumes:
+      # 🔴 El frontend leerá las imágenes desde aquí (lo inyectamos en su carpeta public)
+      - membretes_data:/usr/share/nginx/html/membretes 
     networks:
       - web  # Conectado a Caddy
+
+# 🔴 Declaramos el disco duro compartido
+volumes:
+  membretes_data:
 
 networks:
   internal-net:

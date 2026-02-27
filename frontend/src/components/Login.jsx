@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { User, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // 🔴 1. Importamos el navegador nativo de React
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  const navigate = useNavigate(); // 🔴 2. Inicializamos el navegador
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -23,6 +26,11 @@ const Login = ({ onLogin }) => {
 
       if (response.ok) {
         localStorage.setItem('usuarioActivo', JSON.stringify(data.user));
+        
+        // 🔴 3. LA VERDADERA MAGIA: Cambiamos la ruta PRIMERO usando React Router
+        navigate('/', { replace: true });
+        
+        // 4. LUEGO avisamos que ya estamos logueados
         onLogin(data.user);
       } else {
         setError(data.message || 'Credenciales incorrectas. Verifica tu usuario y contraseña.');
@@ -37,12 +45,22 @@ const Login = ({ onLogin }) => {
   return (
     <div className="min-h-screen flex bg-white font-sans">
       
+      {/* PANEL AZUL (IZQUIERDA) */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-blue-900 overflow-hidden flex-col justify-between p-12 text-white">
+        
+        {/* Fondo degradado */}
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900"></div>
 
+        {/* EL JAGUAR AL 50% PARA MEJORAR NITIDEZ */}
+        <img 
+          src="/jaguar_unicach3.png" 
+          alt="Marca de agua Jaguar" 
+          className="absolute z-0 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[50%] pointer-events-none opacity-10 mix-blend-screen"
+          style={{ filter: 'grayscale(100%) brightness(200%)' }}
+        />
+
+        {/* Contenido (Textos y Logo) */}
         <div className="relative z-10 mt-8">
-           
-           {/* 🔴 Le quitamos el fondo blanco y dejamos el logo flotando libremente */}
            <div className="mb-10 inline-block">
               <img src="/logo-unicach.png" alt="Logo UNICACH" className="h-28 md:h-32 w-auto object-contain drop-shadow-2xl" />
            </div>
@@ -61,11 +79,11 @@ const Login = ({ onLogin }) => {
         </div>
       </div>
 
+      {/* PANEL BLANCO (DERECHA - FORMULARIO) */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 lg:p-24 bg-gray-50 lg:bg-white shadow-[-20px_0_30px_-15px_rgba(0,0,0,0.1)] z-10">
         <div className="w-full max-w-sm space-y-8">
           
           <div className="lg:hidden text-center mb-8 flex flex-col items-center">
-             {/* 🔴 También sin fondo blanco en la versión de celular */}
              <div className="mb-5">
                <img src="/logo-unicach.png" alt="Logo UNICACH" className="h-24 w-auto object-contain drop-shadow-md" />
              </div>
