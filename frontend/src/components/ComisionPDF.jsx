@@ -153,7 +153,7 @@ const GastosYFirmaFinal = ({ data, comisionadoNombre, categoriaComisionado, text
       </View>
       <View style={{ flex: 1, padding: 4, paddingBottom: 6, justifyContent: 'space-between' }}>
         <Text style={{ fontSize: 6.8, textAlign: 'justify', color: '#000', lineHeight: 1.15, paddingHorizontal: 4 }}>
-          RECIBÍ: DE LA UNIVERSIDAD AUTÓNOMA DE CIENCIAS Y ARTES DE CHIAPAS LA CANTIDAD DE {fmt(data.importe_total)}{' '}
+          RECIBÍ: DE LA UNIVERSIDAD AUTÓNOMA DE CIENCIAS Y ARTES DE CHIAPAS LA CANTIDAD DE <Text style={{ fontWeight: 'bold' }}>{fmt(data.importe_total)}</Text>{' '}
           <Text style={{ fontWeight: 'bold' }}>{textoImporteLetras}</Text>{' '}
           POR EL (LOS) CONCEPTOS ANTES DESCRITOS, LOS CUALES DEBERÁN SER COMPROBADOS DE ACUERDO A LA FUENTE DE FINANCIAMIENTO O DEVUELTOS A MÁS TARDAR EL QUINTO DÍA POSTERIOR A LA CONCLUSIÓN DE LA COMISIÓN; DE NO CUMPLIRSE ESTA CONDICIÓN, DOY MI CONSENTIMIENTO Y AUTORIZACIÓN PARA QUE SE DESCUENTE EN LA NÓMINA DE SUELDOS MÁS PRÓXIMA O DE ALGUNA OTRA PERCEPCIÓN QUE ME CORRESPONDA (ARTÍCULO 33 DEL REGLAMENTO DE NORMAS Y TARIFAS PARA LA APLICACIÓN DE VIÁTICOS Y PASAJES DE LA UNICACH).
         </Text>
