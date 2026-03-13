@@ -8,10 +8,9 @@ const DetalleOrden = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [orden, setOrden] = useState(null);
-  const [autoridades, setAutoridades] = useState([]); // 🔴 Estado para las firmas
+  const [autoridades, setAutoridades] = useState([]); 
   const [loading, setLoading] = useState(true);
 
-  // 🔴 Cargamos tanto la orden como las autoridades al mismo tiempo
   useEffect(() => {
     const cargarDatos = async () => {
       try {
@@ -41,6 +40,10 @@ const DetalleOrden = () => {
   
   if (!orden) return <div className="p-20 text-center text-red-600 font-bold">Orden no encontrada.</div>;
 
+  // 🔴 AQUÍ ESTÁ LA MAGIA: Construimos el nombre perfecto del archivo
+  const numeroFolio = String(orden.numero_folio || orden.id).padStart(3, '0');
+  const nombreArchivo = `${numeroFolio} - ${orden.comisionado}.pdf`;
+
   return (
     <div className="p-4 md:p-8 bg-slate-100 min-h-screen">
       <div className="max-w-6xl mx-auto">
@@ -50,8 +53,8 @@ const DetalleOrden = () => {
           </button>
           
           <PDFDownloadLink
-            document={<ComisionPDF data={orden} autoridades={autoridades} />} // 🔴 Le pasamos las firmas al botón de descarga
-            fileName={`Comision_${orden.id}_CESMECA.pdf`}
+            document={<ComisionPDF data={orden} autoridades={autoridades} />} 
+            fileName={nombreArchivo} // 🔴 APLICAMOS EL NOMBRE AL BOTÓN VERDE
             className="flex items-center justify-center gap-2 bg-green-600 text-white px-8 py-3 rounded-lg font-black shadow-lg hover:bg-green-700 transition-all active:scale-95 text-xs uppercase w-full md:w-auto"
           >
             {({ loading }) => (
@@ -64,7 +67,6 @@ const DetalleOrden = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl h-[70vh] md:h-[85vh] overflow-hidden border border-gray-300 flex flex-col">
-          {/* 🔴 Le pasamos las firmas al Visor principal */}
           <BlobProvider document={<ComisionPDF data={orden} autoridades={autoridades} />}> 
             {({ url, loading, error }) => {
               if (loading) {
@@ -91,7 +93,7 @@ const DetalleOrden = () => {
                       <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-blue-700 transition-all active:scale-95">
                         <Eye size={20} /> Ver Documento
                       </a>
-                      <a href={url} download={`Comision_${orden.id}_CESMECA.pdf`} className="flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-bold shadow-sm hover:bg-gray-300 transition-all active:scale-95">
+                      <a href={url} download={nombreArchivo} className="flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-bold shadow-sm hover:bg-gray-300 transition-all active:scale-95"> {/* 🔴 APLICAMOS EL NOMBRE AL BOTÓN DE RESPALDO */}
                         <Download size={20} /> Guardar PDF
                       </a>
                     </div>

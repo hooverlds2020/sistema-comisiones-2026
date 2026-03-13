@@ -191,6 +191,8 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
 
   const esInternacional    = tipoComisionStr.includes('INTERNACIONAL');
   const esDirectorViajando = comisionadoNombre.includes("EMMANUEL NÁJERA") || comisionadoNombre.includes("EMMANUEL NAJERA");
+  
+  const esDosFirmas        = !esInternacional; 
 
   const textoImporteLetras = numeroALetras(data.importe_total);
   const textoFechaLugar    = `SAN CRISTOBAL DE LAS CASAS, CHIAPAS; ${formatFechaLarga(data.fecha_elaboracion)}`;
@@ -199,11 +201,12 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
   const firmaH        = esInternacional ? (esDirectorViajando ? 58 : 52) : 75; 
   const confSignSpace = esInternacional ? (esDirectorViajando ? 30 : 25) : 40; 
 
-  const props = { data, comisionadoNombre, categoriaComisionado, textoImporteLetras, confSignSpace };
-
-  // 🔴 LA RUTA LIMPIA DE NGINX QUE AHORA SÍ ENCONTRARÁ EL ARCHIVO CORRECTO
   const anioMembrete = data.anio_folio || 2026;
   const imagenUrl = `/membretes/membrete_${anioMembrete}.png`;
+  
+  const numeroFolioOficial = (data.numero_folio || data.id || '').toString().padStart(3, '0');
+
+  const props = { data, comisionadoNombre, categoriaComisionado, textoImporteLetras, confSignSpace };
 
   return (
     <Document>
@@ -213,7 +216,9 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
         <View style={styles.mainTable}>
           <View style={styles.row}>
             <View style={styles.col100}>
-              <Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 9 }}>OFICIO DE COMISIÓN/ {(data.id || '').toString().padStart(3, '0')}/CESMECA/2026</Text>
+              <Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 9 }}>
+                OFICIO DE COMISIÓN/ {numeroFolioOficial}/CESMECA/{anioMembrete}
+              </Text>
             </View>
           </View>
           <View style={styles.row}>
@@ -224,19 +229,30 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
             <View style={styles.col65}><Text style={styles.label}>CATEGORÍA:</Text><Text style={styles.value}>{categoriaComisionado}</Text></View>
             <View style={styles.col35}><Text style={styles.label}>ADSCRIPCIÓN:</Text><Text style={styles.value}>CESMECA</Text></View>
           </View>
-          <View style={styles.rowMotivo}>
+          
+          <View style={[styles.rowMotivo, esDosFirmas && { minHeight: 50 }]}>
             <Text style={styles.label}>MOTIVO DE LA COMISIÓN:</Text>
             <Text style={{ ...styles.value, textAlign: 'justify' }}>{data.motivo || ''}</Text>
           </View>
+          
           <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', minHeight: 26 }}>
             <View style={{ width: '40%', borderRightWidth: 1, borderColor: '#000' }} />
             <View style={styles.col20}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>PERIODO</Text><Text style={{ fontSize: 7, textAlign: 'center' }}>{date(data.fecha_inicio)} al {date(data.fecha_fin)}</Text></View>
             <View style={styles.col20}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>CUOTA DIARIA</Text><Text style={{ fontSize: 6, textAlign: 'center' }}>{data.cuota_diaria || ''}</Text></View>
             <View style={styles.col20Last}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>IMPORTE ACORDADO</Text><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{money(data.importe_viaticos)}</Text></View>
           </View>
-          <View style={styles.row}><View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>LUGAR DE COMISIÓN: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{data.lugar || ''}</Text></Text></View></View>
-          <View style={styles.row}><View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>DÍA Y HORA DE SALIDA:  <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{date(data.fecha_inicio)} - {formatHora(data.hora_salida)}</Text>{'    '}DÍA Y HORA DE REGRESO: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{date(data.fecha_fin)} - {formatHora(data.hora_regreso)}</Text></Text></View></View>
-          <View style={styles.row}><View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>MEDIO DE TRANSPORTE: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{data.medio_transporte || ''}</Text></Text></View></View>
+
+          {/* 🔴 AJUSTE: Más respiro para estas 3 filas (SOLO 2 firmas) */}
+          <View style={[styles.row, esDosFirmas && { minHeight: 18 }]}>
+            <View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>LUGAR DE COMISIÓN: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{data.lugar || ''}</Text></Text></View>
+          </View>
+          <View style={[styles.row, esDosFirmas && { minHeight: 18 }]}>
+            <View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>DÍA Y HORA DE SALIDA:  <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{date(data.fecha_inicio)} - {formatHora(data.hora_salida)}</Text>{'    '}DÍA Y HORA DE REGRESO: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{date(data.fecha_fin)} - {formatHora(data.hora_regreso)}</Text></Text></View>
+          </View>
+          <View style={[styles.row, esDosFirmas && { minHeight: 18 }]}>
+            <View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>MEDIO DE TRANSPORTE: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{data.medio_transporte || ''}</Text></Text></View>
+          </View>
+
           {data.vehiculo_marca && (
             <View style={styles.row}>
               <View style={styles.col40}><Text style={styles.label}>MARCA:</Text><Text style={styles.value}>{data.vehiculo_marca}</Text></View>
@@ -244,8 +260,9 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
               <View style={{ width: '30%', padding: 2 }}><Text style={styles.label}>PLACAS:</Text><Text style={styles.value}>{data.vehiculo_placas}</Text></View>
             </View>
           )}
+          
           <View style={styles.row}>
-            <View style={styles.col100}>
+            <View style={[styles.col100, esDosFirmas && { paddingTop: 6, paddingBottom: 15 }]}>
               <View style={{ padding: 2 }}><Text style={{ fontSize: 7 }}><Text style={{ fontWeight: 'bold' }}>CLAVE PROGRAMÁTICA: </Text>{clavesFormateadas}</Text></View>
               {parseFloat(data.importe_combustible) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>26111.- COMBUSTIBLE</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_combustible)}</Text></View></View>}
               {parseFloat(data.importe_pasajes_aereos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>37111.- PASAJES NACIONALES AÉREOS</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_pasajes_aereos)}</Text></View></View>}
@@ -259,7 +276,12 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
               </View>
             </View>
           </View>
-          <View style={styles.row}><View style={styles.col100}><Text style={{ fontSize: 7, textAlign: 'right', paddingRight: 5 }}>{textoFechaLugar}</Text></View></View>
+          
+          {/* 🔴 AJUSTE: Más respiro para la Fecha de San Cristóbal (SOLO 2 firmas) */}
+          <View style={[styles.row, esDosFirmas && { minHeight: 18 }]}>
+            <View style={styles.col100}><Text style={{ fontSize: 7, textAlign: 'right', paddingRight: 5 }}>{textoFechaLugar}</Text></View>
+          </View>
+
           <View style={{ flex: 1, flexDirection: 'column' }} wrap={false}>
             {esInternacional ? (
               esDirectorViajando ? (
