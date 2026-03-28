@@ -1,32 +1,43 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  FileText, Users, Shield, LogOut, User, Menu, X, 
-  Car, UserCheck, Layers, Wallet, Settings 
+import {
+  FileText, Users, Shield, LogOut, User, Menu, X,
+  Car, UserCheck, Layers, Wallet, Settings, Activity
 } from 'lucide-react';
 
 const Layout = ({ children, usuario, onLogout }) => {
   const location = useLocation();
   const [menuAbierto, setMenuAbierto] = useState(false);
 
-  // 🔴 Agregamos la ruta de Configuración al listado
-  const navLinks = [
+  // ���️ Revisamos si el usuario actual es Administrador
+  const esAdmin = usuario?.rol?.toLowerCase().includes('admin');
+
+  // Enlaces base para todos
+  const baseLinks = [
     { path: '/', label: 'Oficios', icon: <FileText size={18} /> },
     { path: '/personal', label: 'Personal', icon: <Users size={18} /> },
     { path: '/vehiculos', label: 'Vehículos', icon: <Car size={18} /> },
     { path: '/autoridades', label: 'Autoridades', icon: <UserCheck size={18} /> },
     { path: '/claves-programaticas', label: 'Programáticas', icon: <Layers size={18} /> },
-    { path: '/claves-presupuestales', label: 'Presupuestos', icon: <Wallet size={18} /> },
+    { path: '/claves-presupuestales', label: 'Presupuestos', icon: <Wallet size={18} /> }
+  ];
+
+  // Enlaces que SOLO ven los Administradores
+  const adminLinks = [
     { path: '/usuarios', label: 'Usuarios', icon: <Shield size={18} /> },
     { path: '/configuracion', label: 'Configuración', icon: <Settings size={18} /> },
+    { path: '/bitacora', label: 'Auditoría', icon: <Activity size={18} /> }
   ];
+
+  // Armamos el menú final dependiendo del rol
+  const navLinks = esAdmin ? [...baseLinks, ...adminLinks] : baseLinks;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <nav className="bg-blue-900 text-white shadow-md z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            
+
             <div className="flex items-center gap-3">
               <div className="flex items-center">
                  <img src="/logo-unicach.png" alt="UNICACH" className="h-10 w-auto object-contain" />
@@ -49,7 +60,7 @@ const Layout = ({ children, usuario, onLogout }) => {
               ))}
             </div>
 
-            <div className="hidden md:flex items-center gap-4 border-l border-blue-700 pl-4 ml-2">
+            <div className="hidden md:flex items-center gap-4 border-l border-blue-700 px-4 ml-2">
               <div className="flex items-center gap-2 text-sm text-blue-100">
                 <User size={16} />
                 <div className="flex flex-col leading-none">
@@ -57,8 +68,8 @@ const Layout = ({ children, usuario, onLogout }) => {
                   <span className="text-[10px] uppercase tracking-wider">{usuario?.rol}</span>
                 </div>
               </div>
-              <button 
-                onClick={onLogout} 
+              <button
+                onClick={onLogout}
                 className="bg-red-600 hover:bg-red-500 text-white p-2 rounded-lg transition-colors"
                 title="Cerrar Sesión"
               >

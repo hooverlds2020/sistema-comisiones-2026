@@ -41,7 +41,7 @@ const DetalleOrden = () => {
   if (!orden) return <div className="p-20 text-center text-red-600 font-bold">Orden no encontrada.</div>;
 
   // 🔴 AQUÍ ESTÁ LA MAGIA: Construimos el nombre perfecto del archivo
-  const numeroFolio = String(orden.numero_folio || orden.id).padStart(3, '0');
+  const numeroFolio = String(orden.numero_folio || '000').padStart(3, '0');
   const nombreArchivo = `${numeroFolio} - ${orden.comisionado}.pdf`;
 
   return (

@@ -167,8 +167,17 @@ const EditarComision = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (clavesSeleccionadas.length === 0) { Swal.fire('Atención', 'Agrega al menos una Clave Programática', 'warning'); return; }
-    const datosFinales = { ...formData, clave_programatica: clavesSeleccionadas.join(', ') };
+    if (clavesSeleccionadas.length === 0 && formData.importe_total > 0) { Swal.fire('Atención', 'Agrega al menos una Clave Programática', 'warning'); return; }
+    
+    // ���️ BLOQUE DE SEGURIDAD: Validar Años y Fechas
+    const anioElab = new Date(formData.fecha_elaboracion).getFullYear();
+    if (anioElab < 2024 || anioElab > 2050) { Swal.fire('Error', 'Año inválido en la Fecha de Elaboración.', 'error'); return; }
+    if (!formData.es_fechas_multiples) {
+        if (formData.fecha_inicio && (new Date(formData.fecha_inicio).getFullYear() < 2024 || new Date(formData.fecha_inicio).getFullYear() > 2050)) { Swal.fire('Error', 'Año inválido en Fecha Inicio.', 'error'); return; }
+        if (formData.fecha_fin && (new Date(formData.fecha_fin).getFullYear() < 2024 || new Date(formData.fecha_fin).getFullYear() > 2050)) { Swal.fire('Error', 'Año inválido en Fecha Fin.', 'error'); return; }
+    }
+
+    const datosFinales = { ...formData, clave_programatica: clavesSeleccionadas.join(', '), usuario_modificador: JSON.parse(localStorage.getItem('usuarioActivo') || '{}').nombre || 'Sistema' };
 
     try {
       const response = await fetch(`/api/ordenes/${id}`, { 

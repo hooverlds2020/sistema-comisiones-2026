@@ -74,20 +74,12 @@ const money = (amount) => {
     return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
 };
 
-const PAD_TOP    = 88;  
-const PAD_BOTTOM = 97; 
+const PAD_TOP    = 88;
+const PAD_BOTTOM = 97;
 const PAD_H      = 28;
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: PAD_TOP,
-    paddingBottom: PAD_BOTTOM,
-    paddingLeft: PAD_H,
-    paddingRight: PAD_H,
-    fontSize: 8,
-    fontFamily: 'Helvetica',
-    flexDirection: 'column',
-  },
+  page: { paddingTop: PAD_TOP, paddingBottom: PAD_BOTTOM, paddingLeft: PAD_H, paddingRight: PAD_H, fontSize: 8, fontFamily: 'Helvetica', flexDirection: 'column' },
   background: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   headerTitle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginTop: 15, marginBottom: 6 },
   mainTable: { borderWidth: 1, borderColor: '#000', width: '100%', flex: 1, flexDirection: 'column' },
@@ -144,26 +136,31 @@ const FilaUnFirma = ({ nombre, cargo, altura }) => (
   </View>
 );
 
-const GastosYFirmaFinal = ({ data, comisionadoNombre, categoriaComisionado, textoImporteLetras, confSignSpace }) => {
+const GastosYFirmaFinal = ({ data, comisionadoNombre, categoriaComisionado, textoImporteLetras, tieneGastos }) => {
   const fmt = (a) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(parseFloat(a) || 0);
+
   return (
     <>
       <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderTopWidth: 0, borderColor: '#000', backgroundColor: '#f0f0f0', minHeight: 13, alignItems: 'center' }}>
         <View style={{ width: '100%', padding: 2 }}><Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 7 }}>GASTOS A COMPROBAR</Text></View>
       </View>
-      <View style={{ flex: 1, padding: 4, paddingBottom: 6, justifyContent: 'space-between' }}>
+
+      <View style={{ flex: 1, padding: 4, paddingBottom: 6 }}>
         <Text style={{ fontSize: 6.8, textAlign: 'justify', color: '#000', lineHeight: 1.15, paddingHorizontal: 4 }}>
           RECIBÍ: DE LA UNIVERSIDAD AUTÓNOMA DE CIENCIAS Y ARTES DE CHIAPAS LA CANTIDAD DE <Text style={{ fontWeight: 'bold' }}>{fmt(data.importe_total)}</Text>{' '}
           <Text style={{ fontWeight: 'bold' }}>{textoImporteLetras}</Text>{' '}
           POR EL (LOS) CONCEPTOS ANTES DESCRITOS, LOS CUALES DEBERÁN SER COMPROBADOS DE ACUERDO A LA FUENTE DE FINANCIAMIENTO O DEVUELTOS A MÁS TARDAR EL QUINTO DÍA POSTERIOR A LA CONCLUSIÓN DE LA COMISIÓN; DE NO CUMPLIRSE ESTA CONDICIÓN, DOY MI CONSENTIMIENTO Y AUTORIZACIÓN PARA QUE SE DESCUENTE EN LA NÓMINA DE SUELDOS MÁS PRÓXIMA O DE ALGUNA OTRA PERCEPCIÓN QUE ME CORRESPONDA (ARTÍCULO 33 DEL REGLAMENTO DE NORMAS Y TARIFAS PARA LA APLICACIÓN DE VIÁTICOS Y PASAJES DE LA UNICACH).
         </Text>
-        <View style={{ alignItems: 'center' }}>
-          <Text style={{ fontSize: 7, fontWeight: 'bold' }}>FIRMA DE CONFORMIDAD</Text>
-          <View style={{ height: confSignSpace }} />
-          <View style={{ width: 220, alignItems: 'center' }}>
-            <View style={{ borderTopWidth: 1, borderColor: '#000', width: '100%', marginBottom: 2 }} />
-            <Text style={{ fontSize: 7, fontWeight: 'bold' }}>{comisionadoNombre}</Text>
-            <Text style={{ fontSize: 6 }}>{categoriaComisionado}</Text>
+
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontSize: 7, fontWeight: 'bold', marginBottom: 15 }}>FIRMA DE CONFORMIDAD</Text>
+            <View style={{ height: 35 }} />
+            <View style={{ width: 220, alignItems: 'center' }}>
+              <View style={{ borderTopWidth: 1, borderColor: '#000', width: '100%', marginBottom: 2 }} />
+              <Text style={{ fontSize: 7, fontWeight: 'bold' }}>{comisionadoNombre}</Text>
+              <Text style={{ fontSize: 6 }}>{categoriaComisionado}</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -191,22 +188,46 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
 
   const esInternacional    = tipoComisionStr.includes('INTERNACIONAL');
   const esDirectorViajando = comisionadoNombre.includes("EMMANUEL NÁJERA") || comisionadoNombre.includes("EMMANUEL NAJERA");
-  
-  const esDosFirmas        = !esInternacional; 
+
+  const esDosFirmas        = !esInternacional;
 
   const textoImporteLetras = numeroALetras(data.importe_total);
   const textoFechaLugar    = `SAN CRISTOBAL DE LAS CASAS, CHIAPAS; ${formatFechaLarga(data.fecha_elaboracion)}`;
-  const clavesFormateadas  = (data.clave_programatica || '').replace(/  Y  /g, ', ');
 
-  const firmaH        = esInternacional ? (esDirectorViajando ? 58 : 52) : 75; 
-  const confSignSpace = esInternacional ? (esDirectorViajando ? 30 : 25) : 40; 
+  const tieneGastos = parseFloat(data.importe_total) > 0;
+
+  // 🛡 CORRECCIÓN CLAVES: Si el total es 0, ignoramos la clave y forzamos "NO APLICA"
+  const clavesFormateadas = (tieneGastos && data.clave_programatica)
+      ? data.clave_programatica.replace(/  Y  /g, ', ')
+      : 'NO APLICA - SIN RECURSO ASIGNADO';
+
+  const firmaH = esInternacional ? (esDirectorViajando ? 58 : 52) : 75;
 
   const anioMembrete = data.anio_folio || 2026;
-  const imagenUrl = `/membretes/membrete_${anioMembrete}.png`;
   
-  const numeroFolioOficial = (data.numero_folio || data.id || '').toString().padStart(3, '0');
+  // ------------------------------------------------------------------------------------------
+  // 🔥 FIX PARA EL MEMBRETE EN PRODUCCIÓN
+  // Calculamos la URL absoluta asegurando que funcione en el navegador de cualquier persona.
+  // ------------------------------------------------------------------------------------------
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://orden-comision.clickwebhoover.online';
+  const imagenUrl = `${baseUrl}/membrete_${anioMembrete}.png`;
+  // ------------------------------------------------------------------------------------------
 
-  const props = { data, comisionadoNombre, categoriaComisionado, textoImporteLetras, confSignSpace };
+  const numeroFolioOficial = String(data.numero_folio || '000').padStart(3, '0');
+
+  const props = { data, comisionadoNombre, categoriaComisionado, textoImporteLetras, tieneGastos };
+
+  // 🛡 CORRECCIÓN PERIODO: Lógica para saber si es el mismo día
+  const fechaInicioFmt = date(data.fecha_inicio);
+  const fechaFinFmt = date(data.fecha_fin);
+  let textoPeriodo = '';
+  if (data.es_fechas_multiples) {
+      textoPeriodo = data.periodo_texto;
+  } else {
+      textoPeriodo = (fechaInicioFmt === fechaFinFmt && fechaInicioFmt !== '')
+          ? fechaInicioFmt
+          : `${fechaInicioFmt} al ${fechaFinFmt}`;
+  }
 
   return (
     <Document>
@@ -229,26 +250,55 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
             <View style={styles.col65}><Text style={styles.label}>CATEGORÍA:</Text><Text style={styles.value}>{categoriaComisionado}</Text></View>
             <View style={styles.col35}><Text style={styles.label}>ADSCRIPCIÓN:</Text><Text style={styles.value}>CESMECA</Text></View>
           </View>
-          
+
           <View style={[styles.rowMotivo, esDosFirmas && { minHeight: 50 }]}>
             <Text style={styles.label}>MOTIVO DE LA COMISIÓN:</Text>
             <Text style={{ ...styles.value, textAlign: 'justify' }}>{data.motivo || ''}</Text>
           </View>
-          
+
           <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', minHeight: 26 }}>
             <View style={{ width: '40%', borderRightWidth: 1, borderColor: '#000' }} />
-            <View style={styles.col20}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>PERIODO</Text><Text style={{ fontSize: 7, textAlign: 'center' }}>{date(data.fecha_inicio)} al {date(data.fecha_fin)}</Text></View>
+            <View style={styles.col20}>
+                <Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>PERIODO</Text>
+                {/* 📆 Aquí se imprime la fecha inteligente */}
+                <Text style={{ fontSize: 7, textAlign: 'center' }}>
+                    {textoPeriodo}
+                </Text>
+            </View>
             <View style={styles.col20}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>CUOTA DIARIA</Text><Text style={{ fontSize: 6, textAlign: 'center' }}>{data.cuota_diaria || ''}</Text></View>
             <View style={styles.col20Last}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>IMPORTE ACORDADO</Text><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{money(data.importe_viaticos)}</Text></View>
           </View>
 
-          {/* 🔴 AJUSTE: Más respiro para estas 3 filas (SOLO 2 firmas) */}
           <View style={[styles.row, esDosFirmas && { minHeight: 18 }]}>
             <View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>LUGAR DE COMISIÓN: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{data.lugar || ''}</Text></Text></View>
           </View>
-          <View style={[styles.row, esDosFirmas && { minHeight: 18 }]}>
-            <View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>DÍA Y HORA DE SALIDA:  <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{date(data.fecha_inicio)} - {formatHora(data.hora_salida)}</Text>{'    '}DÍA Y HORA DE REGRESO: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{date(data.fecha_fin)} - {formatHora(data.hora_regreso)}</Text></Text></View>
-          </View>
+
+          {data.es_fechas_multiples ? (
+             <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', alignItems: 'flex-start', paddingVertical: 2, minHeight: esDosFirmas ? 18 : 14 }}>
+                <View style={{ width: '50%', padding: 2 }}>
+                    <Text style={{ fontSize: 7, fontWeight: 'bold' }}>DÍA Y HORA DE SALIDA: </Text>
+                    <Text style={{ fontWeight: 'bold', fontSize: 8, marginTop: 2, marginLeft: 20, lineHeight: 1.3 }}>
+                        {data.dias_salida || ''}
+                    </Text>
+                </View>
+                <View style={{ width: '50%', padding: 2 }}>
+                    <Text style={{ fontSize: 7, fontWeight: 'bold' }}>DE REGRESO: </Text>
+                    <Text style={{ fontWeight: 'bold', fontSize: 8, marginTop: 2, marginLeft: 20, lineHeight: 1.3 }}>
+                        {data.dias_regreso || ''}
+                    </Text>
+                </View>
+             </View>
+          ) : (
+             <View style={[styles.row, esDosFirmas && { minHeight: 18 }]}>
+                <View style={styles.col100}>
+                    <Text style={{ fontSize: 7, fontWeight: 'bold' }}>
+                        DÍA Y HORA DE SALIDA:  <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{fechaInicioFmt} - {formatHora(data.hora_salida)}</Text>
+                        {'    '}DÍA Y HORA DE REGRESO: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{fechaFinFmt} - {formatHora(data.hora_regreso)}</Text>
+                    </Text>
+                </View>
+             </View>
+          )}
+
           <View style={[styles.row, esDosFirmas && { minHeight: 18 }]}>
             <View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>MEDIO DE TRANSPORTE: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{data.medio_transporte || ''}</Text></Text></View>
           </View>
@@ -260,7 +310,7 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
               <View style={{ width: '30%', padding: 2 }}><Text style={styles.label}>PLACAS:</Text><Text style={styles.value}>{data.vehiculo_placas}</Text></View>
             </View>
           )}
-          
+
           <View style={styles.row}>
             <View style={[styles.col100, esDosFirmas && { paddingTop: 6, paddingBottom: 15 }]}>
               <View style={{ padding: 2 }}><Text style={{ fontSize: 7 }}><Text style={{ fontWeight: 'bold' }}>CLAVE PROGRAMÁTICA: </Text>{clavesFormateadas}</Text></View>
@@ -276,8 +326,7 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
               </View>
             </View>
           </View>
-          
-          {/* 🔴 AJUSTE: Más respiro para la Fecha de San Cristóbal (SOLO 2 firmas) */}
+
           <View style={[styles.row, esDosFirmas && { minHeight: 18 }]}>
             <View style={styles.col100}><Text style={{ fontSize: 7, textAlign: 'right', paddingRight: 5 }}>{textoFechaLugar}</Text></View>
           </View>
@@ -294,7 +343,7 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
             )}
             <GastosYFirmaFinal {...props} />
           </View>
-        </View> 
+        </View>
         <Text style={{ fontSize: 6.5, textAlign: 'center', marginTop: 4, marginBottom: 2, paddingHorizontal: 10 }}>
           DECLARO BAJO PROTESTA DE DECIR VERDAD QUE LOS DATOS CONTENIDOS EN ESTE DOCUMENTO SON VERÍDICOS Y MANIFIESTO TENER CONOCIMIENTO DE LAS SANCIONES QUE SE APLICARÁN EN CASO CONTRARIO.
         </Text>

@@ -58,15 +58,15 @@ const limpiar = (valor) => (valor === '' || valor === undefined ? null : valor);
 const limpiarNumero = (valor) => (valor === '' || valor === undefined || isNaN(valor) ? 0 : valor);
 
 // ==========================================
-// ðŸ¤– FUNCIÃ“N: PERRO GUARDIÃN DE TELEGRAM
+// í´– FUNCIÃ“N: PERRO GUARDIÃN DE TELEGRAM
 // ==========================================
 const enviarAlertaTelegram = async (mensaje) => {
-  const TOKEN = process.env.TELEGRAM_BOT_TOKEN; 
+  const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-  
+
   if (!TOKEN || !CHAT_ID) {
     console.log("âš ï¸ Telegram no configurado en .env. Omitiendo alerta.");
-    return; 
+    return;
   }
 
   const url = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
@@ -86,6 +86,21 @@ const enviarAlertaTelegram = async (mensaje) => {
 };
 
 // ==========================================
+// í³ FUNCIÃ“N: REGISTRAR EN BITÃCORA
+// ==========================================
+const registrarBitacora = async (usuario, accion, folio, detalles) => {
+  try {
+    const user = usuario || 'Sistema';
+    await pool.query(
+      'INSERT INTO bitacora (usuario, accion, folio, detalles) VALUES ($1, $2, $3, $4)',
+      [user, accion, folio, detalles]
+    );
+  } catch (err) {
+    console.error('âŒ Error guardando en bitÃ¡cora:', err.message);
+  }
+};
+
+// ==========================================
 // MÃ“DULO DE USUARIOS
 // ==========================================
 app.post('/api/login', async (req, res) => {
@@ -97,7 +112,8 @@ app.post('/api/login', async (req, res) => {
     );
     if (result.rows.length > 0) {
       const usuario = result.rows[0];
-      enviarAlertaTelegram(`ðŸ” *Acceso al Sistema Web*\n\nðŸ‘¤ *Usuario:* ${usuario.nombre}\nðŸ“… *Fecha:* ${new Date().toLocaleString('es-MX')}`);
+      enviarAlertaTelegram(`í´ *Acceso al Sistema Web*\n\ní±¤ *Usuario:* ${usuario.nombre}\ní³… *Fecha:* ${new Date().toLocaleString('es-MX')}`);
+      registrarBitacora(usuario.username, 'LOGIN', null, 'Inicio de sesiÃ³n');
       res.json({ message: 'Login exitoso', user: usuario });
     } else {
       res.status(401).json({ message: 'Credenciales invÃ¡lidas o cuenta inactiva' });
@@ -127,7 +143,7 @@ app.put('/api/usuarios/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre, rol, activo, password } = req.body;
   try {
-    const query = password 
+    const query = password
       ? 'UPDATE usuarios SET nombre=$1, rol=$2, activo=$3, password=$4 WHERE id=$5 RETURNING *'
       : 'UPDATE usuarios SET nombre=$1, rol=$2, activo=$3 WHERE id=$4 RETURNING *';
     const values = password ? [nombre, rol, activo, password, id] : [nombre, rol, activo, id];
@@ -203,10 +219,18 @@ app.get('/api/ordenes/:id', async (req, res) => {
   } catch (err) { res.status(500).send('Error'); }
 });
 
+// í³ ELIMINAR ORDEN (BITÃCORA INTEGRADA)
 app.delete('/api/ordenes/:id', async (req, res) => {
     try {
+        const { usuario_modificador } = req.body;
         const result = await pool.query('DELETE FROM ordenes WHERE id = $1 RETURNING *', [req.params.id]);
         if (result.rows.length > 0) {
+            const ordenEliminada = result.rows[0];
+            const folioStr = `${String(ordenEliminada.numero_folio).padStart(3, '0')}/CESMECA/${ordenEliminada.anio_folio}`;
+            
+            registrarBitacora(usuario_modificador, 'ELIMINAR', folioStr, `Se eliminÃ³ la orden de ${ordenEliminada.comisionado}`);
+            enviarAlertaTelegram(`í·‘ï¸ *ORDEN ELIMINADA*\n\ní³„ *Folio:* ${folioStr}\ní±¤ *Viajero:* ${ordenEliminada.comisionado}\ní·‘â€í²» *Usuario:* ${usuario_modificador || 'Sistema'}`);
+            
             res.json({ message: 'Orden eliminada correctamente' });
         } else {
             res.status(404).json({ error: 'Orden no encontrada' });
@@ -216,9 +240,17 @@ app.delete('/api/ordenes/:id', async (req, res) => {
     }
 });
 
+// í³ CREAR ORDEN (BITÃCORA INTEGRADA)
 app.post('/api/ordenes', async (req, res) => {
   try {
     const data = req.body;
+
+    // í»¡ï¸ BLOQUE DE SEGURIDAD PARA DATOS CORRECTOS
+    if (!data.comisionado || data.comisionado.trim() === "" || !data.lugar || data.lugar.trim() === "") {
+        console.log("âŒ Intento de guardado de orden incompleta bloqueado.");
+        return res.status(400).json({ error: "Faltan datos crÃ­ticos: Comisionado o Lugar" });
+    }
+
     const fechaRef = data.fecha_elaboracion ? new Date(data.fecha_elaboracion) : new Date();
     const anioActual = fechaRef.getFullYear();
 
@@ -230,11 +262,12 @@ app.post('/api/ordenes', async (req, res) => {
         tipo_comision, comisionado, rfc, categoria, adscripcion, lugar, motivo,
         fecha_inicio, fecha_fin, hora_salida, hora_regreso,
         medio_transporte, vehiculo_marca, vehiculo_modelo, vehiculo_placas,
-        clave_programatica, cuota_diaria, 
+        clave_programatica, cuota_diaria,
         importe_combustible, importe_pasajes, importe_pasajes_aereos, importe_congresos,
         importe_viaticos, importe_otros, importe_total, estatus, fecha_elaboracion,
-        numero_folio, anio_folio, informe_actividades
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
+        numero_folio, anio_folio, informe_actividades,
+        es_fechas_multiples, periodo_texto, dias_salida, dias_regreso
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33)
       RETURNING *
     `;
 
@@ -242,18 +275,21 @@ app.post('/api/ordenes', async (req, res) => {
       limpiar(data.tipo_comision), limpiar(data.comisionado), limpiar(data.rfc), limpiar(data.categoria), limpiar(data.adscripcion), data.lugar, limpiar(data.motivo),
       data.fecha_inicio, data.fecha_fin, limpiar(data.hora_salida), limpiar(data.hora_regreso),
       data.medio_transporte, limpiar(data.vehiculo_marca), limpiar(data.vehiculo_modelo), limpiar(data.vehiculo_placas),
-      limpiar(data.clave_programatica), limpiar(data.cuota_diaria), 
-      limpiarNumero(data.importe_combustible), limpiarNumero(data.importe_pasajes), 
+      limpiar(data.clave_programatica), limpiar(data.cuota_diaria),
+      limpiarNumero(data.importe_combustible), limpiarNumero(data.importe_pasajes),
       limpiarNumero(data.importe_pasajes_aereos), limpiarNumero(data.importe_congresos),
-      limpiarNumero(data.importe_viaticos), limpiarNumero(data.importe_otros), 
+      limpiarNumero(data.importe_viaticos), limpiarNumero(data.importe_otros),
       limpiarNumero(data.importe_total), data.estatus || 'Borrador',
       data.fecha_elaboracion || new Date(),
-      nuevoNumeroFolio, anioActual, limpiar(data.informe_actividades)
+      nuevoNumeroFolio, anioActual, limpiar(data.informe_actividades),
+      data.es_fechas_multiples || false, data.periodo_texto || '', data.dias_salida || '', data.dias_regreso || ''
     ];
 
     const newOrden = await pool.query(query, values);
+    const folioStr = `${String(nuevoNumeroFolio).padStart(3, '0')}/CESMECA/${anioActual}`;
     
-    enviarAlertaTelegram(`ðŸ“ *NUEVA ORDEN CREADA*\n\nðŸ“„ *Folio:* ${String(nuevoNumeroFolio).padStart(3, '0')}/CESMECA/${anioActual}\nðŸ‘¤ *Viajero:* ${data.comisionado}\nðŸ“ *Destino:* ${data.lugar}\nðŸ’° *Monto:* $${data.importe_total}`);
+    registrarBitacora(data.usuario_modificador, 'CREAR', folioStr, `Creada para ${data.comisionado}`);
+    enviarAlertaTelegram(`í³ *NUEVA ORDEN CREADA*\n\ní³„ *Folio:* ${folioStr}\ní±¤ *Viajero:* ${data.comisionado}\ní³ *Destino:* ${data.lugar}\ní²° *Monto:* $${data.importe_total}\ní·‘â€í²» *Usuario:* ${data.usuario_modificador || 'Sistema'}`);
 
     res.json(newOrden.rows[0]);
   } catch (err) {
@@ -262,6 +298,7 @@ app.post('/api/ordenes', async (req, res) => {
   }
 });
 
+// í³ ACTUALIZAR ORDEN (BITÃCORA INTEGRADA)
 app.put('/api/ordenes/:id', async (req, res) => {
   const { id } = req.params;
   const data = req.body;
@@ -271,7 +308,7 @@ app.put('/api/ordenes/:id', async (req, res) => {
         tipo_comision=$1, comisionado=$2, rfc=$3, categoria=$4, adscripcion=$5, lugar=$6, motivo=$7,
         fecha_inicio=$8, fecha_fin=$9, hora_salida=$10, hora_regreso=$11,
         medio_transporte=$12, vehiculo_marca=$13, vehiculo_modelo=$14, vehiculo_placas=$15,
-        clave_programatica=$16, cuota_diaria=$17, 
+        clave_programatica=$16, cuota_diaria=$17,
         importe_combustible=$18, importe_pasajes=$19, importe_pasajes_aereos=$20, importe_congresos=$21,
         importe_viaticos=$22, importe_otros=$23, importe_total=$24, estatus=$25, fecha_elaboracion=$26, informe_actividades=$27
       WHERE id=$28 RETURNING *
@@ -280,13 +317,20 @@ app.put('/api/ordenes/:id', async (req, res) => {
       limpiar(data.tipo_comision), limpiar(data.comisionado), limpiar(data.rfc), limpiar(data.categoria), limpiar(data.adscripcion), data.lugar, limpiar(data.motivo),
       data.fecha_inicio, data.fecha_fin, limpiar(data.hora_salida), limpiar(data.hora_regreso),
       data.medio_transporte, limpiar(data.vehiculo_marca), limpiar(data.vehiculo_modelo), limpiar(data.vehiculo_placas),
-      limpiar(data.clave_programatica), limpiar(data.cuota_diaria), 
-      limpiarNumero(data.importe_combustible), limpiarNumero(data.importe_pasajes), 
+      limpiar(data.clave_programatica), limpiar(data.cuota_diaria),
+      limpiarNumero(data.importe_combustible), limpiarNumero(data.importe_pasajes),
       limpiarNumero(data.importe_pasajes_aereos), limpiarNumero(data.importe_congresos),
-      limpiarNumero(data.importe_viaticos), limpiarNumero(data.importe_otros), 
+      limpiarNumero(data.importe_viaticos), limpiarNumero(data.importe_otros),
       limpiarNumero(data.importe_total), data.estatus || 'Borrador', data.fecha_elaboracion, limpiar(data.informe_actividades), id
     ];
     const result = await pool.query(query, values);
+    
+    if (result.rows.length > 0) {
+      const ordenUpdate = result.rows[0];
+      const folioStr = `${String(ordenUpdate.numero_folio).padStart(3, '0')}/CESMECA/${ordenUpdate.anio_folio}`;
+      registrarBitacora(data.usuario_modificador, 'EDITAR', folioStr, `Modificada por ${data.usuario_modificador || 'Sistema'}`);
+    }
+
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -419,6 +463,15 @@ app.delete('/api/claves-presupuestales/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.get('/api/bitacora', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM bitacora ORDER BY fecha DESC LIMIT 100');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.listen(port, () => {
-  console.log(`ðŸš€ Servidor UNICACH corriendo en puerto ${port}`);
+  console.log(`íº€ Servidor UNICACH corriendo en puerto ${port}`);
 });
