@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Save, ArrowLeft, Briefcase, UserCheck, Globe, Calendar, Car, Bus, Plane, Plus, Trash2, Calculator, X } from 'lucide-react';
+import { Save, ArrowLeft, Briefcase, UserCheck, Globe, Calendar, Car, Bus, Plane, Plus, Trash2, Calculator, X, ListFilter } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const EditarComision = () => {
@@ -28,6 +28,7 @@ const EditarComision = () => {
     comisionado: '', rfc: '', categoria: '', adscripcion: '',
     lugar: '', motivo: '', fecha_inicio: '', fecha_fin: '',
     hora_salida: '', hora_regreso: '', 
+    es_fechas_multiples: false, periodo_texto: '', dias_salida: '', dias_regreso: '',
     medio_transporte: 'Terrestre', 
     vehiculo_marca: '', vehiculo_modelo: '', vehiculo_placas: '',
     cuota_diaria: '', 
@@ -49,7 +50,7 @@ const EditarComision = () => {
             const [resPersonal, resVehiculos, resClaves, resOrden] = await Promise.all([
                 fetch('/api/personal'),
                 fetch('/api/vehiculos'),
-                fetch('/api/claves-programaticas'), // Ajuste de ruta de catálogo (antes decía claves)
+                fetch('/api/claves-programaticas'),
                 fetch(`/api/ordenes/${id}`)
             ]);
 
@@ -62,6 +63,10 @@ const EditarComision = () => {
                 
                 setFormData({
                     ...orden,
+                    es_fechas_multiples: orden.es_fechas_multiples || false,
+                    periodo_texto: orden.periodo_texto || '',
+                    dias_salida: orden.dias_salida || '',
+                    dias_regreso: orden.dias_regreso || '',
                     fecha_elaboracion: formatDateForInput(orden.fecha_elaboracion) || formatDateForInput(new Date()),
                     fecha_inicio: formatDateForInput(orden.fecha_inicio),
                     fecha_fin: formatDateForInput(orden.fecha_fin)
@@ -103,8 +108,8 @@ const EditarComision = () => {
   }, [formData.importe_combustible, formData.importe_otros, formData.importe_pasajes_aereos, formData.importe_pasajes, formData.importe_congresos, formData.importe_viaticos]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const agregarClave = () => {
@@ -169,7 +174,7 @@ const EditarComision = () => {
     e.preventDefault();
     if (clavesSeleccionadas.length === 0 && formData.importe_total > 0) { Swal.fire('Atención', 'Agrega al menos una Clave Programática', 'warning'); return; }
     
-    // ���️ BLOQUE DE SEGURIDAD: Validar Años y Fechas
+    // 🛡️ BLOQUE DE SEGURIDAD: Validar Años y Fechas
     const anioElab = new Date(formData.fecha_elaboracion).getFullYear();
     if (anioElab < 2024 || anioElab > 2050) { Swal.fire('Error', 'Año inválido en la Fecha de Elaboración.', 'error'); return; }
     if (!formData.es_fechas_multiples) {
@@ -177,7 +182,11 @@ const EditarComision = () => {
         if (formData.fecha_fin && (new Date(formData.fecha_fin).getFullYear() < 2024 || new Date(formData.fecha_fin).getFullYear() > 2050)) { Swal.fire('Error', 'Año inválido en Fecha Fin.', 'error'); return; }
     }
 
-    const datosFinales = { ...formData, clave_programatica: clavesSeleccionadas.join(', '), usuario_modificador: JSON.parse(localStorage.getItem('usuarioActivo') || '{}').nombre || 'Sistema' };
+    const datosFinales = { 
+        ...formData, 
+        clave_programatica: clavesSeleccionadas.join(', '), 
+        usuario_modificador: JSON.parse(localStorage.getItem('usuarioActivo') || '{}').nombre || 'Sistema' 
+    };
 
     try {
       const response = await fetch(`/api/ordenes/${id}`, { 
@@ -194,7 +203,6 @@ const EditarComision = () => {
               timer: 1500,
               showConfirmButton: false
           }).then(() => {
-              // 🔴 AQUÍ ESTÁ LA MAGIA: Regresar a la tabla principal
               navigate('/', { replace: true });
           }); 
       } else { 
@@ -309,9 +317,6 @@ const EditarComision = () => {
                                             {p.nombre}
                                         </li>
                                 ))}
-                                {catalogoPersonal.filter(p => p.nombre.toLowerCase().includes((formData.comisionado || '').toLowerCase())).length === 0 && (
-                                    <li className="p-3 text-sm text-gray-500 italic text-center">No se encontraron resultados</li>
-                                )}
                             </ul>
                         )}
                     </div>
@@ -324,16 +329,44 @@ const EditarComision = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                    <h3 className="text-sm font-bold text-gray-800 uppercase mb-3">2. Datos del Viaje</h3>
+                    <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-sm font-bold text-gray-800 uppercase">2. Datos del Viaje</h3>
+                        <label className="flex items-center gap-2 cursor-pointer bg-white px-2 py-1 rounded border shadow-sm hover:bg-blue-50">
+                            <input type="checkbox" name="es_fechas_multiples" checked={formData.es_fechas_multiples} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
+                            <span className="text-xs font-bold text-blue-900 flex items-center gap-1"><ListFilter size={14}/> Fechas Salteadas</span>
+                        </label>
+                    </div>
+
                     <div className="space-y-3">
                         <div><label className="block text-xs font-bold text-gray-700 mb-1">Lugar</label><input name="lugar" value={formData.lugar} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div><label className="block text-xs font-bold text-gray-700 mb-1">Fecha Inicio</label><input type="date" name="fecha_inicio" value={formData.fecha_inicio} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
-                            <div><label className="block text-xs font-bold text-gray-700 mb-1">Hora Salida</label><input type="time" name="hora_salida" value={formData.hora_salida} onChange={handleChange} className="w-full p-2 border rounded" /></div>
-                            <div><label className="block text-xs font-bold text-gray-700 mb-1">Fecha Fin</label><input type="date" name="fecha_fin" value={formData.fecha_fin} onChange={handleChange} className="w-full p-2 border rounded" required /></div>
-                            <div><label className="block text-xs font-bold text-gray-700 mb-1">Hora Regreso</label><input type="time" name="hora_regreso" value={formData.hora_regreso} onChange={handleChange} className="w-full p-2 border rounded" /></div>
-                        </div>
+                        {!formData.es_fechas_multiples ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-white rounded border border-gray-200">
+                                <div><label className="block text-xs font-bold text-gray-700 mb-1">Fecha Inicio</label><input type="date" name="fecha_inicio" value={formData.fecha_inicio} onChange={handleChange} className="w-full p-2 border rounded" required={!formData.es_fechas_multiples} /></div>
+                                <div><label className="block text-xs font-bold text-gray-700 mb-1">Hora Salida</label><input type="time" name="hora_salida" value={formData.hora_salida} onChange={handleChange} className="w-full p-2 border rounded" /></div>
+                                <div><label className="block text-xs font-bold text-gray-700 mb-1">Fecha Fin</label><input type="date" name="fecha_fin" value={formData.fecha_fin} onChange={handleChange} className="w-full p-2 border rounded" required={!formData.es_fechas_multiples} /></div>
+                                <div><label className="block text-xs font-bold text-gray-700 mb-1">Hora Regreso</label><input type="time" name="hora_regreso" value={formData.hora_regreso} onChange={handleChange} className="w-full p-2 border rounded" /></div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3 p-3 bg-blue-50 border border-blue-200 rounded animate-fadeIn">
+                                <div>
+                                    <label className="block text-xs font-bold text-blue-900 mb-1">Texto para la celda de 'Periodo' (Ej: 12, 13 y 15 de agosto)</label>
+                                    <input type="text" name="periodo_texto" value={formData.periodo_texto} onChange={handleChange} className="w-full p-2 border border-blue-300 rounded" required={formData.es_fechas_multiples} />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-blue-900 mb-1">Lista de Fechas Salida (Una por línea)</label>
+                                        <textarea name="dias_salida" value={formData.dias_salida} onChange={handleChange} className="w-full p-2 border border-blue-300 rounded font-mono text-sm h-24" placeholder="12 de agosto de 2025&#10;13 de agosto de 2025" required={formData.es_fechas_multiples} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-blue-900 mb-1">Lista de Fechas Regreso (Una por línea)</label>
+                                        <textarea name="dias_regreso" value={formData.dias_regreso} onChange={handleChange} className="w-full p-2 border border-blue-300 rounded font-mono text-sm h-24" placeholder="12 de agosto de 2025&#10;13 de agosto de 2025" required={formData.es_fechas_multiples} />
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-blue-600 font-bold text-center">En este modo especial, el documento se amoldará a lo que escribas aquí.</p>
+                            </div>
+                        )}
+
                         <div><label className="block text-xs font-bold text-gray-700 mb-1">Motivo</label><textarea name="motivo" value={formData.motivo} onChange={handleChange} className="w-full p-2 border rounded h-16" required /></div>
                     </div>
                 </div>

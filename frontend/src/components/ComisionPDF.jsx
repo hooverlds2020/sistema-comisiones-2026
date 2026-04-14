@@ -74,17 +74,19 @@ const money = (amount) => {
     return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
 };
 
-const PAD_TOP    = 88;
+// 🔥 AJUSTE: Reducimos el PAD_TOP de 88 a 76 para subir toda la tabla
+const PAD_TOP    = 76; 
 const PAD_BOTTOM = 97;
 const PAD_H      = 28;
 
 const styles = StyleSheet.create({
   page: { paddingTop: PAD_TOP, paddingBottom: PAD_BOTTOM, paddingLeft: PAD_H, paddingRight: PAD_H, fontSize: 8, fontFamily: 'Helvetica', flexDirection: 'column' },
   background: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  headerTitle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginTop: 15, marginBottom: 6 },
+  // 🔥 AJUSTE: Reducimos los márgenes del título para ganar aún más espacio
+  headerTitle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginTop: 2, marginBottom: 4 }, 
   mainTable: { borderWidth: 1, borderColor: '#000', width: '100%', flex: 1, flexDirection: 'column' },
   row: { flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', minHeight: 14, alignItems: 'center' },
-  rowMotivo: { flexDirection: 'column', borderBottomWidth: 1, borderColor: '#000', minHeight: 35, padding: 4 },
+  rowMotivo: { flexDirection: 'column', borderBottomWidth: 1, borderColor: '#000', padding: 4 },
   headerRow: { flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', backgroundColor: '#f0f0f0', minHeight: 13, alignItems: 'center' },
   col100: { width: '100%', padding: 2 },
   col65: { width: '65%', padding: 2, borderRightWidth: 1, borderColor: '#000' },
@@ -136,8 +138,10 @@ const FilaUnFirma = ({ nombre, cargo, altura }) => (
   </View>
 );
 
-const GastosYFirmaFinal = ({ data, comisionadoNombre, categoriaComisionado, textoImporteLetras, tieneGastos }) => {
+const GastosYFirmaFinal = ({ data, comisionadoNombre, categoriaComisionado, textoImporteLetras, tieneGastos, isCompact, isSuperCompact }) => {
   const fmt = (a) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(parseFloat(a) || 0);
+
+  const finalGapHeight = isSuperCompact ? 15 : (isCompact ? 25 : 35);
 
   return (
     <>
@@ -154,8 +158,8 @@ const GastosYFirmaFinal = ({ data, comisionadoNombre, categoriaComisionado, text
 
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ alignItems: 'center' }}>
-            <Text style={{ fontSize: 7, fontWeight: 'bold', marginBottom: 15 }}>FIRMA DE CONFORMIDAD</Text>
-            <View style={{ height: 35 }} />
+            <Text style={{ fontSize: 7, fontWeight: 'bold', marginBottom: isSuperCompact ? 5 : 15, marginTop: isSuperCompact ? 5 : 0 }}>FIRMA DE CONFORMIDAD</Text>
+            <View style={{ height: finalGapHeight }} />
             <View style={{ width: 220, alignItems: 'center' }}>
               <View style={{ borderTopWidth: 1, borderColor: '#000', width: '100%', marginBottom: 2 }} />
               <Text style={{ fontSize: 7, fontWeight: 'bold' }}>{comisionadoNombre}</Text>
@@ -196,28 +200,16 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
 
   const tieneGastos = parseFloat(data.importe_total) > 0;
 
-  // 🛡 CORRECCIÓN CLAVES: Si el total es 0, ignoramos la clave y forzamos "NO APLICA"
   const clavesFormateadas = (tieneGastos && data.clave_programatica)
       ? data.clave_programatica.replace(/  Y  /g, ', ')
       : 'NO APLICA - SIN RECURSO ASIGNADO';
 
-  const firmaH = esInternacional ? (esDirectorViajando ? 58 : 52) : 75;
-
   const anioMembrete = data.anio_folio || 2026;
-  
-  // ------------------------------------------------------------------------------------------
-  // 🔥 FIX PARA EL MEMBRETE EN PRODUCCIÓN
-  // Calculamos la URL absoluta asegurando que funcione en el navegador de cualquier persona.
-  // ------------------------------------------------------------------------------------------
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://orden-comision.clickwebhoover.online';
   const imagenUrl = `${baseUrl}/membrete_${anioMembrete}.png`;
-  // ------------------------------------------------------------------------------------------
 
   const numeroFolioOficial = String(data.numero_folio || '000').padStart(3, '0');
 
-  const props = { data, comisionadoNombre, categoriaComisionado, textoImporteLetras, tieneGastos };
-
-  // 🛡 CORRECCIÓN PERIODO: Lógica para saber si es el mismo día
   const fechaInicioFmt = date(data.fecha_inicio);
   const fechaFinFmt = date(data.fecha_fin);
   let textoPeriodo = '';
@@ -228,6 +220,29 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
           ? fechaInicioFmt
           : `${fechaInicioFmt} al ${fechaFinFmt}`;
   }
+
+  const lineasSalida = (data.dias_salida || '').split('\n').length;
+  const lineasRegreso = (data.dias_regreso || '').split('\n').length;
+  const maxLineasFechas = Math.max(lineasSalida, lineasRegreso);
+
+  const isCompact = data.es_fechas_multiples && maxLineasFechas > 6;
+  const isSuperCompact = data.es_fechas_multiples && maxLineasFechas > 12;
+
+  let dynamicFontSize = 8;
+  let dynamicLineHeight = 1.3;
+  if (maxLineasFechas > 16) { 
+      dynamicFontSize = 5.0; dynamicLineHeight = 1.0; 
+  } else if (maxLineasFechas > 12) { 
+      dynamicFontSize = 5.8; dynamicLineHeight = 1.0; 
+  } else if (maxLineasFechas > 6) { 
+      dynamicFontSize = 6.5; dynamicLineHeight = 1.1; 
+  }
+
+  let firmaH = esInternacional ? (esDirectorViajando ? 58 : 52) : 75;
+  if (isSuperCompact) firmaH = 40;
+  else if (isCompact) firmaH = 55;
+
+  const props = { data, comisionadoNombre, categoriaComisionado, textoImporteLetras, tieneGastos, isCompact, isSuperCompact };
 
   return (
     <Document>
@@ -251,7 +266,7 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
             <View style={styles.col35}><Text style={styles.label}>ADSCRIPCIÓN:</Text><Text style={styles.value}>CESMECA</Text></View>
           </View>
 
-          <View style={[styles.rowMotivo, esDosFirmas && { minHeight: 50 }]}>
+          <View style={[styles.rowMotivo, esDosFirmas && !isCompact && { minHeight: 50 }, isCompact && { minHeight: 30 }]}>
             <Text style={styles.label}>MOTIVO DE LA COMISIÓN:</Text>
             <Text style={{ ...styles.value, textAlign: 'justify' }}>{data.motivo || ''}</Text>
           </View>
@@ -260,10 +275,7 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
             <View style={{ width: '40%', borderRightWidth: 1, borderColor: '#000' }} />
             <View style={styles.col20}>
                 <Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>PERIODO</Text>
-                {/* 📆 Aquí se imprime la fecha inteligente */}
-                <Text style={{ fontSize: 7, textAlign: 'center' }}>
-                    {textoPeriodo}
-                </Text>
+                <Text style={{ fontSize: 7, textAlign: 'center' }}>{textoPeriodo}</Text>
             </View>
             <View style={styles.col20}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>CUOTA DIARIA</Text><Text style={{ fontSize: 6, textAlign: 'center' }}>{data.cuota_diaria || ''}</Text></View>
             <View style={styles.col20Last}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>IMPORTE ACORDADO</Text><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{money(data.importe_viaticos)}</Text></View>
@@ -277,15 +289,11 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
              <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', alignItems: 'flex-start', paddingVertical: 2, minHeight: esDosFirmas ? 18 : 14 }}>
                 <View style={{ width: '50%', padding: 2 }}>
                     <Text style={{ fontSize: 7, fontWeight: 'bold' }}>DÍA Y HORA DE SALIDA: </Text>
-                    <Text style={{ fontWeight: 'bold', fontSize: 8, marginTop: 2, marginLeft: 20, lineHeight: 1.3 }}>
-                        {data.dias_salida || ''}
-                    </Text>
+                    <Text style={{ fontWeight: 'bold', fontSize: dynamicFontSize, marginTop: 2, marginLeft: 20, lineHeight: dynamicLineHeight }}>{data.dias_salida || ''}</Text>
                 </View>
                 <View style={{ width: '50%', padding: 2 }}>
                     <Text style={{ fontSize: 7, fontWeight: 'bold' }}>DE REGRESO: </Text>
-                    <Text style={{ fontWeight: 'bold', fontSize: 8, marginTop: 2, marginLeft: 20, lineHeight: 1.3 }}>
-                        {data.dias_regreso || ''}
-                    </Text>
+                    <Text style={{ fontWeight: 'bold', fontSize: dynamicFontSize, marginTop: 2, marginLeft: 20, lineHeight: dynamicLineHeight }}>{data.dias_regreso || ''}</Text>
                 </View>
              </View>
           ) : (
@@ -312,7 +320,7 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
           )}
 
           <View style={styles.row}>
-            <View style={[styles.col100, esDosFirmas && { paddingTop: 6, paddingBottom: 15 }]}>
+            <View style={[styles.col100, esDosFirmas && { paddingTop: 6, paddingBottom: isCompact ? 4 : 15 }]}>
               <View style={{ padding: 2 }}><Text style={{ fontSize: 7 }}><Text style={{ fontWeight: 'bold' }}>CLAVE PROGRAMÁTICA: </Text>{clavesFormateadas}</Text></View>
               {parseFloat(data.importe_combustible) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>26111.- COMBUSTIBLE</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_combustible)}</Text></View></View>}
               {parseFloat(data.importe_pasajes_aereos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>37111.- PASAJES NACIONALES AÉREOS</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_pasajes_aereos)}</Text></View></View>}
@@ -331,6 +339,7 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
             <View style={styles.col100}><Text style={{ fontSize: 7, textAlign: 'right', paddingRight: 5 }}>{textoFechaLugar}</Text></View>
           </View>
 
+          {/* 🔥 AJUSTE: Todo este bloque (firmas + declaración final) está amarrado para no separarse */}
           <View style={{ flex: 1, flexDirection: 'column' }} wrap={false}>
             {esInternacional ? (
               esDirectorViajando ? (
@@ -341,12 +350,18 @@ const ComisionPDF = ({ data, autoridades = [] }) => {
             ) : (
               <><FirmaHeader left="COMISIONADO" right="AUTORIZA" /><FilaDosFirmas izq={{ nombre: comisionadoNombre, cargo: categoriaComisionado }} der={esDirectorViajando ? SECRETARIO : DIRECTOR} altura={firmaH} /></>
             )}
+            
             <GastosYFirmaFinal {...props} />
+
+            {/* 🔥 AJUSTE: Párrafo de protesta insertado dentro del mismo contenedor irrompible */}
+            <View style={{ borderTopWidth: 1, borderColor: '#000', paddingVertical: 4 }}>
+              <Text style={{ fontSize: 6.5, textAlign: 'center', paddingHorizontal: 10 }}>
+                DECLARO BAJO PROTESTA DE DECIR VERDAD QUE LOS DATOS CONTENIDOS EN ESTE DOCUMENTO SON VERÍDICOS Y MANIFIESTO TENER CONOCIMIENTO DE LAS SANCIONES QUE SE APLICARÁN EN CASO CONTRARIO.
+              </Text>
+            </View>
           </View>
+
         </View>
-        <Text style={{ fontSize: 6.5, textAlign: 'center', marginTop: 4, marginBottom: 2, paddingHorizontal: 10 }}>
-          DECLARO BAJO PROTESTA DE DECIR VERDAD QUE LOS DATOS CONTENIDOS EN ESTE DOCUMENTO SON VERÍDICOS Y MANIFIESTO TENER CONOCIMIENTO DE LAS SANCIONES QUE SE APLICARÁN EN CASO CONTRARIO.
-        </Text>
       </Page>
     </Document>
   );

@@ -58,7 +58,7 @@ const limpiar = (valor) => (valor === '' || valor === undefined ? null : valor);
 const limpiarNumero = (valor) => (valor === '' || valor === undefined || isNaN(valor) ? 0 : valor);
 
 // ==========================================
-// í´– FUNCIÃ“N: PERRO GUARDIÃN DE TELEGRAM
+// ï¿½ï¿½ï¿½ FUNCIÃ“N: PERRO GUARDIÃN DE TELEGRAM
 // ==========================================
 const enviarAlertaTelegram = async (mensaje) => {
   const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -86,7 +86,7 @@ const enviarAlertaTelegram = async (mensaje) => {
 };
 
 // ==========================================
-// í³ FUNCIÃ“N: REGISTRAR EN BITÃCORA
+// ï¿½ï¿½ï¿½ FUNCIÃ“N: REGISTRAR EN BITÃCORA
 // ==========================================
 const registrarBitacora = async (usuario, accion, folio, detalles) => {
   try {
@@ -112,7 +112,7 @@ app.post('/api/login', async (req, res) => {
     );
     if (result.rows.length > 0) {
       const usuario = result.rows[0];
-      enviarAlertaTelegram(`í´ *Acceso al Sistema Web*\n\ní±¤ *Usuario:* ${usuario.nombre}\ní³… *Fecha:* ${new Date().toLocaleString('es-MX')}`);
+      enviarAlertaTelegram(`ï¿½ï¿½ï¿½ *Acceso al Sistema Web*\n\nï¿½ï¿½ï¿½ *Usuario:* ${usuario.nombre}\nï¿½ï¿½ï¿½ *Fecha:* ${new Date().toLocaleString('es-MX')}`);
       registrarBitacora(usuario.username, 'LOGIN', null, 'Inicio de sesiÃ³n');
       res.json({ message: 'Login exitoso', user: usuario });
     } else {
@@ -219,7 +219,7 @@ app.get('/api/ordenes/:id', async (req, res) => {
   } catch (err) { res.status(500).send('Error'); }
 });
 
-// í³ ELIMINAR ORDEN (BITÃCORA INTEGRADA)
+// ï¿½ï¿½ï¿½ ELIMINAR ORDEN (BITÃCORA INTEGRADA)
 app.delete('/api/ordenes/:id', async (req, res) => {
     try {
         const { usuario_modificador } = req.body;
@@ -229,7 +229,7 @@ app.delete('/api/ordenes/:id', async (req, res) => {
             const folioStr = `${String(ordenEliminada.numero_folio).padStart(3, '0')}/CESMECA/${ordenEliminada.anio_folio}`;
             
             registrarBitacora(usuario_modificador, 'ELIMINAR', folioStr, `Se eliminÃ³ la orden de ${ordenEliminada.comisionado}`);
-            enviarAlertaTelegram(`í·‘ï¸ *ORDEN ELIMINADA*\n\ní³„ *Folio:* ${folioStr}\ní±¤ *Viajero:* ${ordenEliminada.comisionado}\ní·‘â€í²» *Usuario:* ${usuario_modificador || 'Sistema'}`);
+            enviarAlertaTelegram(`ï¿½ï¿½ï¿½ï¸ *ORDEN ELIMINADA*\n\nï¿½ï¿½ï¿½ *Folio:* ${folioStr}\nï¿½ï¿½ï¿½ *Viajero:* ${ordenEliminada.comisionado}\nï¿½ï¿½ï¿½â€ï¿½ï¿½ï¿½ *Usuario:* ${usuario_modificador || 'Sistema'}`);
             
             res.json({ message: 'Orden eliminada correctamente' });
         } else {
@@ -240,12 +240,12 @@ app.delete('/api/ordenes/:id', async (req, res) => {
     }
 });
 
-// í³ CREAR ORDEN (BITÃCORA INTEGRADA)
+// ï¿½ï¿½ï¿½ CREAR ORDEN (BITÃCORA INTEGRADA)
 app.post('/api/ordenes', async (req, res) => {
   try {
     const data = req.body;
 
-    // í»¡ï¸ BLOQUE DE SEGURIDAD PARA DATOS CORRECTOS
+    // ï¿½ï¿½ï¿½ï¸ BLOQUE DE SEGURIDAD PARA DATOS CORRECTOS
     if (!data.comisionado || data.comisionado.trim() === "" || !data.lugar || data.lugar.trim() === "") {
         console.log("âŒ Intento de guardado de orden incompleta bloqueado.");
         return res.status(400).json({ error: "Faltan datos crÃ­ticos: Comisionado o Lugar" });
@@ -289,7 +289,7 @@ app.post('/api/ordenes', async (req, res) => {
     const folioStr = `${String(nuevoNumeroFolio).padStart(3, '0')}/CESMECA/${anioActual}`;
     
     registrarBitacora(data.usuario_modificador, 'CREAR', folioStr, `Creada para ${data.comisionado}`);
-    enviarAlertaTelegram(`í³ *NUEVA ORDEN CREADA*\n\ní³„ *Folio:* ${folioStr}\ní±¤ *Viajero:* ${data.comisionado}\ní³ *Destino:* ${data.lugar}\ní²° *Monto:* $${data.importe_total}\ní·‘â€í²» *Usuario:* ${data.usuario_modificador || 'Sistema'}`);
+    enviarAlertaTelegram(`ï¿½ï¿½ï¿½ *NUEVA ORDEN CREADA*\n\nï¿½ï¿½ï¿½ *Folio:* ${folioStr}\nï¿½ï¿½ï¿½ *Viajero:* ${data.comisionado}\nï¿½ï¿½ï¿½ *Destino:* ${data.lugar}\nï¿½ï¿½ï¿½ *Monto:* $${data.importe_total}\nï¿½ï¿½ï¿½â€ï¿½ï¿½ï¿½ *Usuario:* ${data.usuario_modificador || 'Sistema'}`);
 
     res.json(newOrden.rows[0]);
   } catch (err) {
@@ -298,7 +298,7 @@ app.post('/api/ordenes', async (req, res) => {
   }
 });
 
-// í³ ACTUALIZAR ORDEN (BITÃCORA INTEGRADA)
+// ï¿½ï¿½ï¿½ ACTUALIZAR ORDEN (BITÃCORA INTEGRADA)
 app.put('/api/ordenes/:id', async (req, res) => {
   const { id } = req.params;
   const data = req.body;
@@ -310,8 +310,8 @@ app.put('/api/ordenes/:id', async (req, res) => {
         medio_transporte=$12, vehiculo_marca=$13, vehiculo_modelo=$14, vehiculo_placas=$15,
         clave_programatica=$16, cuota_diaria=$17,
         importe_combustible=$18, importe_pasajes=$19, importe_pasajes_aereos=$20, importe_congresos=$21,
-        importe_viaticos=$22, importe_otros=$23, importe_total=$24, estatus=$25, fecha_elaboracion=$26, informe_actividades=$27
-      WHERE id=$28 RETURNING *
+        importe_viaticos=$22, importe_otros=$23, importe_total=$24, estatus=$25, fecha_elaboracion=$26, informe_actividades=$27, es_fechas_multiples=$28, periodo_texto=$29, dias_salida=$30, dias_regreso=$31
+      WHERE id=$32 RETURNING *
     `;
     const values = [
       limpiar(data.tipo_comision), limpiar(data.comisionado), limpiar(data.rfc), limpiar(data.categoria), limpiar(data.adscripcion), data.lugar, limpiar(data.motivo),
@@ -321,7 +321,7 @@ app.put('/api/ordenes/:id', async (req, res) => {
       limpiarNumero(data.importe_combustible), limpiarNumero(data.importe_pasajes),
       limpiarNumero(data.importe_pasajes_aereos), limpiarNumero(data.importe_congresos),
       limpiarNumero(data.importe_viaticos), limpiarNumero(data.importe_otros),
-      limpiarNumero(data.importe_total), data.estatus || 'Borrador', data.fecha_elaboracion, limpiar(data.informe_actividades), id
+      limpiarNumero(data.importe_total), data.estatus || 'Borrador', data.fecha_elaboracion, limpiar(data.informe_actividades), data.es_fechas_multiples || false, data.periodo_texto || '', data.dias_salida || '', data.dias_regreso || '', id
     ];
     const result = await pool.query(query, values);
     
@@ -473,5 +473,5 @@ app.get('/api/bitacora', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`íº€ Servidor UNICACH corriendo en puerto ${port}`);
+  console.log(`ï¿½ï¿½ï¿½ Servidor UNICACH corriendo en puerto ${port}`);
 });
