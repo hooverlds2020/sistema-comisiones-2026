@@ -23,6 +23,9 @@ const EditarComision = () => {
   const [calcMedios, setCalcMedios] = useState("");
   const [calcMontoMedio, setCalcMontoMedio] = useState("");
 
+  // 🔥 NUEVO: Estado para manejar las filas de fechas dinámicas
+  const [filasFechas, setFilasFechas] = useState([{ salida: '', regreso: '' }]);
+
   const [formData, setFormData] = useState({
     fecha_elaboracion: '', tipo_comision: 'Nacional', 
     comisionado: '', rfc: '', categoria: '', adscripcion: '',
@@ -72,6 +75,16 @@ const EditarComision = () => {
                     fecha_fin: formatDateForInput(orden.fecha_fin)
                 });
 
+                // 🔥 NUEVO: Desmenuzar las fechas de la BD en filas individuales
+                if (orden.es_fechas_multiples && orden.dias_salida) {
+                    const salidas = orden.dias_salida.split('\n');
+                    const regresos = (orden.dias_regreso || '').split('\n');
+                    setFilasFechas(salidas.map((sal, i) => ({
+                        salida: sal,
+                        regreso: regresos[i] || ''
+                    })));
+                }
+
                 if (orden.clave_programatica) {
                     setClavesSeleccionadas(orden.clave_programatica.split(',').map(c => c.trim()).filter(Boolean));
                 }
@@ -97,6 +110,13 @@ const EditarComision = () => {
     fetchAllData();
   }, [id, navigate]);
 
+  // 🔥 NUEVO: Sincronizar las filas de fechas con el formData invisiblemente
+  useEffect(() => {
+      const salidas = filasFechas.map(f => f.salida).join('\n');
+      const regresos = filasFechas.map(f => f.regreso).join('\n');
+      setFormData(prev => ({ ...prev, dias_salida: salidas, dias_regreso: regresos }));
+  }, [filasFechas]);
+
   useEffect(() => {
     const total = (parseFloat(formData.importe_combustible) || 0) + 
                   (parseFloat(formData.importe_otros) || 0) + 
@@ -110,6 +130,22 @@ const EditarComision = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  // 🔥 FUNCIONES DE FECHAS DINÁMICAS
+  const agregarFilaFecha = () => {
+      if (filasFechas.length >= 8) {
+          Swal.fire('Límite alcanzado', 'Para asegurar que el documento se genere correctamente con todas las firmas, el límite máximo es de 8 fechas salteadas por oficio. Si el viaje es más largo, considere dividirlo en dos comisiones.', 'info');
+          return;
+      }
+      setFilasFechas([...filasFechas, { salida: '', regreso: '' }]);
+  };
+
+  const eliminarFilaFecha = (index) => {
+      const nuevasFilas = [...filasFechas];
+      nuevasFilas.splice(index, 1);
+      if (nuevasFilas.length === 0) nuevasFilas.push({ salida: '', regreso: '' });
+      setFilasFechas(nuevasFilas);
   };
 
   const agregarClave = () => {
@@ -174,7 +210,6 @@ const EditarComision = () => {
     e.preventDefault();
     if (clavesSeleccionadas.length === 0 && formData.importe_total > 0) { Swal.fire('Atención', 'Agrega al menos una Clave Programática', 'warning'); return; }
     
-    // 🛡️ BLOQUE DE SEGURIDAD: Validar Años y Fechas
     const anioElab = new Date(formData.fecha_elaboracion).getFullYear();
     if (anioElab < 2024 || anioElab > 2050) { Swal.fire('Error', 'Año inválido en la Fecha de Elaboración.', 'error'); return; }
     if (!formData.es_fechas_multiples) {
@@ -187,6 +222,12 @@ const EditarComision = () => {
         clave_programatica: clavesSeleccionadas.join(', '), 
         usuario_modificador: JSON.parse(localStorage.getItem('usuarioActivo') || '{}').nombre || 'Sistema' 
     };
+
+    // Limpiar textos vacíos para que PostgreSQL no marque error
+    if (!datosFinales.fecha_inicio) datosFinales.fecha_inicio = null;
+    if (!datosFinales.fecha_fin) datosFinales.fecha_fin = null;
+    if (!datosFinales.hora_salida) datosFinales.hora_salida = null;
+    if (!datosFinales.hora_regreso) datosFinales.hora_regreso = null;
 
     try {
       const response = await fetch(`/api/ordenes/${id}`, { 
@@ -348,22 +389,52 @@ const EditarComision = () => {
                                 <div><label className="block text-xs font-bold text-gray-700 mb-1">Hora Regreso</label><input type="time" name="hora_regreso" value={formData.hora_regreso} onChange={handleChange} className="w-full p-2 border rounded" /></div>
                             </div>
                         ) : (
-                            <div className="space-y-3 p-3 bg-blue-50 border border-blue-200 rounded animate-fadeIn">
+                            <div className="space-y-4 p-3 bg-blue-50 border border-blue-200 rounded animate-fadeIn">
                                 <div>
-                                    <label className="block text-xs font-bold text-blue-900 mb-1">Texto para la celda de 'Periodo' (Ej: 12, 13 y 15 de agosto)</label>
+                                    <label className="block text-xs font-bold text-blue-900 mb-1">Texto para la celda de 'Periodo' (Ej: 03, 05 y 06 de feb 2026)</label>
                                     <input type="text" name="periodo_texto" value={formData.periodo_texto} onChange={handleChange} className="w-full p-2 border border-blue-300 rounded" required={formData.es_fechas_multiples} />
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-xs font-bold text-blue-900 mb-1">Lista de Fechas Salida (Una por línea)</label>
-                                        <textarea name="dias_salida" value={formData.dias_salida} onChange={handleChange} className="w-full p-2 border border-blue-300 rounded font-mono text-sm h-24" placeholder="12 de agosto de 2025&#10;13 de agosto de 2025" required={formData.es_fechas_multiples} />
+                                
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-blue-900 border-b border-blue-200 pb-1">Lista de Días y Horas</label>
+                                    {filasFechas.map((fila, index) => (
+                                        <div key={index} className="flex gap-2 items-center bg-white p-2 border border-blue-100 rounded shadow-sm">
+                                            <span className="font-bold text-blue-800 text-xs w-4 text-center">{index + 1}.</span>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Salida (Ej: 03 feb 2026 8:00am)" 
+                                                value={fila.salida}
+                                                onChange={(e) => {
+                                                    const nuevas = [...filasFechas];
+                                                    nuevas[index].salida = e.target.value;
+                                                    setFilasFechas(nuevas);
+                                                }}
+                                                className="w-1/2 p-1.5 text-xs border rounded"
+                                                required={formData.es_fechas_multiples}
+                                            />
+                                            <input 
+                                                type="text" 
+                                                placeholder="Regreso (Ej: 03 feb 2026 6:00pm)" 
+                                                value={fila.regreso}
+                                                onChange={(e) => {
+                                                    const nuevas = [...filasFechas];
+                                                    nuevas[index].regreso = e.target.value;
+                                                    setFilasFechas(nuevas);
+                                                }}
+                                                className="w-1/2 p-1.5 text-xs border rounded"
+                                                required={formData.es_fechas_multiples}
+                                            />
+                                            <button type="button" onClick={() => eliminarFilaFecha(index)} className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors"><Trash2 size={16}/></button>
+                                        </div>
+                                    ))}
+                                    
+                                    <div className="flex justify-center pt-2">
+                                        <button type="button" onClick={agregarFilaFecha} className="flex items-center gap-1 text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded hover:bg-blue-200 transition-colors">
+                                            <Plus size={14}/> Agregar otro día
+                                        </button>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-blue-900 mb-1">Lista de Fechas Regreso (Una por línea)</label>
-                                        <textarea name="dias_regreso" value={formData.dias_regreso} onChange={handleChange} className="w-full p-2 border border-blue-300 rounded font-mono text-sm h-24" placeholder="12 de agosto de 2025&#10;13 de agosto de 2025" required={formData.es_fechas_multiples} />
-                                    </div>
+                                    <p className="text-[10px] text-blue-600 font-bold text-center mt-2">Máximo 8 días permitidos para proteger el diseño del PDF.</p>
                                 </div>
-                                <p className="text-[10px] text-blue-600 font-bold text-center">En este modo especial, el documento se amoldará a lo que escribas aquí.</p>
                             </div>
                         )}
 
@@ -412,10 +483,9 @@ const EditarComision = () => {
                 <div className="mb-6 bg-white p-4 rounded border border-orange-200 shadow-sm">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
                         <label className="block text-xs font-bold text-gray-800">FÓRMULA DE CUOTA DIARIA (Texto que saldrá en el PDF)</label>
-                        <button type="button" onClick={()=>setShowModalCuota(true)} className="flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded font-bold hover:bg-indigo-200 w-full sm:w-auto justify-center"><Calculator size={14}/> Usar Calculadora Mágica</button>
+                        <button type="button" onClick={()=>setShowModalCuota(true)} className="flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded font-bold hover:bg-indigo-200 w-full sm:w-auto justify-center"><Calculator size={14}/> Usar Calculadora</button>
                     </div>
                     <textarea name="cuota_diaria" value={formData.cuota_diaria} onChange={handleChange} rows="2" className="w-full p-2 border rounded font-mono text-sm text-gray-700 bg-gray-50 focus:bg-white" placeholder="Ej. 7 x $1,826.00&#10;½ x $949.52 = $13,731.52"></textarea>
-                    <p className="text-[10px] text-gray-500 mt-1 italic">* Puedes escribir el texto directamente o usar la calculadora para armar la fórmula.</p>
                 </div>
 
                 <div className="mb-4">
@@ -447,7 +517,7 @@ const EditarComision = () => {
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">26111 - Combustible</label><input type="number" step="0.01" name="importe_combustible" value={formData.importe_combustible} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">37111 - Pasajes Aéreos</label><input type="number" step="0.01" name="importe_pasajes_aereos" value={formData.importe_pasajes_aereos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">37211 - Pasajes Terrestres</label><input type="number" step="0.01" name="importe_pasajes" value={formData.importe_pasajes} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37511 - Viáticos (Monto Real Acordado)</label><input type="number" step="0.01" name="importe_viaticos" value={formData.importe_viaticos} onChange={handleChange} className="w-full pl-6 p-2 border rounded border-blue-400 bg-blue-50 focus:bg-white" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37511 - Viáticos</label><input type="number" step="0.01" name="importe_viaticos" value={formData.importe_viaticos} onChange={handleChange} className="w-full pl-6 p-2 border rounded border-blue-400 bg-blue-50 focus:bg-white" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">38301 - Congresos y Conv.</label><input type="number" step="0.01" name="importe_congresos" value={formData.importe_congresos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">39202 - Otros Impuestos</label><input type="number" step="0.01" name="importe_otros" value={formData.importe_otros} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
                 </div>
