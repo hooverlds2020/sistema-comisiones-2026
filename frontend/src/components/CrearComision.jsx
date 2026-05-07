@@ -21,6 +21,22 @@ const CrearComision = () => {
   const [calcMedios, setCalcMedios] = useState("");
   const [calcMontoMedio, setCalcMontoMedio] = useState("");
 
+  const [filasFechas, setFilasFechas] = useState(() => {
+      const borradorGuardado = localStorage.getItem('borrador_comision');
+      if (borradorGuardado) {
+          const parsedBorrador = JSON.parse(borradorGuardado);
+          if (parsedBorrador.es_fechas_multiples && parsedBorrador.dias_salida) {
+              const salidas = parsedBorrador.dias_salida.split('\n');
+              const regresos = (parsedBorrador.dias_regreso || '').split('\n');
+              return salidas.map((sal, i) => ({
+                  salida: sal,
+                  regreso: regresos[i] || ''
+              }));
+          }
+      }
+      return [{ salida: '', regreso: '' }];
+  });
+
   const [formData, setFormData] = useState(() => {
     const borradorGuardado = localStorage.getItem('borrador_comision');
     if (borradorGuardado) {
@@ -45,6 +61,12 @@ const CrearComision = () => {
       importe_total: 0, estatus: 'Borrador'
     };
   });
+
+  useEffect(() => {
+      const salidas = filasFechas.map(f => f.salida).join('\n');
+      const regresos = filasFechas.map(f => f.regreso).join('\n');
+      setFormData(prev => ({ ...prev, dias_salida: salidas, dias_regreso: regresos }));
+  }, [filasFechas]);
 
   useEffect(() => {
     const datosARespaldar = { ...formData, clave_programatica: clavesSeleccionadas.join(', ') };
@@ -78,6 +100,21 @@ const CrearComision = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const agregarFilaFecha = () => {
+      if (filasFechas.length >= 10) {
+          Swal.fire('Límite alcanzado', 'Para asegurar que el documento se genere correctamente, el límite máximo es de 10 fechas salteadas por oficio.', 'info');
+          return;
+      }
+      setFilasFechas([...filasFechas, { salida: '', regreso: '' }]);
+  };
+
+  const eliminarFilaFecha = (index) => {
+      const nuevasFilas = [...filasFechas];
+      nuevasFilas.splice(index, 1);
+      if (nuevasFilas.length === 0) nuevasFilas.push({ salida: '', regreso: '' });
+      setFilasFechas(nuevasFilas);
   };
 
   const agregarClave = () => {
@@ -134,7 +171,6 @@ const CrearComision = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ���️ NUEVO BLOQUE DE SEGURIDAD: Validar Años y Fechas Lógicas
     const anioElab = new Date(formData.fecha_elaboracion).getFullYear();
     if (anioElab < 2024 || anioElab > 2050) {
         Swal.fire('Error en la Fecha', 'Por favor verifica el año en la "Fecha de Elaboración". Parece haber un error de dedo.', 'error');
@@ -162,7 +198,6 @@ const CrearComision = () => {
         }
     }
 
-    // ��� LA SOLUCIÓN: Si no hay claves PERO hay dinero, bloqueamos. Si el total es 0, lo dejamos pasar.
     if (clavesSeleccionadas.length === 0 && formData.importe_total > 0) {
         Swal.fire('Atención', 'Agrega al menos una Clave Programática para justificar los gastos.', 'warning');
         return;
@@ -186,7 +221,6 @@ const CrearComision = () => {
 
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen font-sans relative">
-       {/* Modal Calculadora Oculto por brevedad */}
        {showModalCuota && ( <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"><div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md border-t-4 border-blue-600"><div className="flex justify-between items-center mb-4"><h3 className="font-bold text-lg text-blue-900 flex items-center gap-2"><Calculator/> Asistente de Cuota</h3><button onClick={()=>setShowModalCuota(false)} className="text-gray-500"><X/></button></div><div className="space-y-4"><div className="bg-gray-50 p-3 rounded border"><label className="block text-xs font-bold mb-2">DÍAS COMPLETOS</label><div className="flex gap-2"><input type="number" value={calcDias} onChange={(e)=>setCalcDias(e.target.value)} className="w-1/3 p-2 border rounded" /><span>X $</span><input type="number" value={calcMonto} onChange={(e)=>setCalcMonto(e.target.value)} className="w-2/3 p-2 border rounded" /></div></div><div className="bg-gray-50 p-3 rounded border"><label className="block text-xs font-bold mb-2">MEDIOS DÍAS (½)</label><div className="flex gap-2"><input type="number" value={calcMedios} onChange={(e)=>setCalcMedios(e.target.value)} className="w-1/3 p-2 border rounded" /><span>X $</span><input type="number" value={calcMontoMedio} onChange={(e)=>setCalcMontoMedio(e.target.value)} className="w-2/3 p-2 border rounded" /></div></div><button type="button" onClick={aplicarCalculadora} className="w-full bg-blue-600 text-white font-bold py-3 rounded">Generar Fórmula</button></div></div></div> )}
 
        <div className="max-w-6xl mx-auto bg-white p-4 md:p-8 rounded-lg shadow border border-gray-200">
@@ -257,22 +291,52 @@ const CrearComision = () => {
                                 <div><label className="block text-xs font-bold text-gray-700 mb-1">Hora Regreso</label><input type="time" name="hora_regreso" value={formData.hora_regreso} onChange={handleChange} className="w-full p-2 border rounded" /></div>
                             </div>
                         ) : (
-                            <div className="space-y-3 p-3 bg-blue-50 border border-blue-200 rounded animate-fadeIn">
+                            <div className="space-y-4 p-3 bg-blue-50 border border-blue-200 rounded animate-fadeIn">
                                 <div>
-                                    <label className="block text-xs font-bold text-blue-900 mb-1">Texto para la celda de 'Periodo' (Ej: 12, 13 y 15 de agosto)</label>
+                                    <label className="block text-xs font-bold text-blue-900 mb-1">Texto para la celda de 'Periodo' (Ej: 03, 05 y 06 de feb 2026)</label>
                                     <input type="text" name="periodo_texto" value={formData.periodo_texto} onChange={handleChange} className="w-full p-2 border border-blue-300 rounded" required={formData.es_fechas_multiples} />
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-xs font-bold text-blue-900 mb-1">Lista de Fechas Salida (Una por línea)</label>
-                                        <textarea name="dias_salida" value={formData.dias_salida} onChange={handleChange} className="w-full p-2 border border-blue-300 rounded font-mono text-sm h-24" placeholder="12 de agosto de 2025&#10;13 de agosto de 2025" required={formData.es_fechas_multiples} />
+                                
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-blue-900 border-b border-blue-200 pb-1">Lista de Días y Horas</label>
+                                    {filasFechas.map((fila, index) => (
+                                        <div key={index} className="flex gap-2 items-center bg-white p-2 border border-blue-100 rounded shadow-sm">
+                                            <span className="font-bold text-blue-800 text-xs w-4 text-center">{index + 1}.</span>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Salida (Ej: 03 feb 2026 8:00am)" 
+                                                value={fila.salida}
+                                                onChange={(e) => {
+                                                    const nuevas = [...filasFechas];
+                                                    nuevas[index].salida = e.target.value;
+                                                    setFilasFechas(nuevas);
+                                                }}
+                                                className="w-1/2 p-1.5 text-xs border rounded"
+                                                required={formData.es_fechas_multiples}
+                                            />
+                                            <input 
+                                                type="text" 
+                                                placeholder="Regreso (Ej: 03 feb 2026 6:00pm)" 
+                                                value={fila.regreso}
+                                                onChange={(e) => {
+                                                    const nuevas = [...filasFechas];
+                                                    nuevas[index].regreso = e.target.value;
+                                                    setFilasFechas(nuevas);
+                                                }}
+                                                className="w-1/2 p-1.5 text-xs border rounded"
+                                                required={formData.es_fechas_multiples}
+                                            />
+                                            <button type="button" onClick={() => eliminarFilaFecha(index)} className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors"><Trash2 size={16}/></button>
+                                        </div>
+                                    ))}
+                                    
+                                    <div className="flex justify-center pt-2">
+                                        <button type="button" onClick={agregarFilaFecha} className="flex items-center gap-1 text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded hover:bg-blue-200 transition-colors">
+                                            <Plus size={14}/> Agregar otro día
+                                        </button>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-blue-900 mb-1">Lista de Fechas Regreso (Una por línea)</label>
-                                        <textarea name="dias_regreso" value={formData.dias_regreso} onChange={handleChange} className="w-full p-2 border border-blue-300 rounded font-mono text-sm h-24" placeholder="12 de agosto de 2025&#10;13 de agosto de 2025" required={formData.es_fechas_multiples} />
-                                    </div>
+                                    <p className="text-[10px] text-blue-600 font-bold text-center mt-2">Máximo 10 días permitidos para proteger el diseño del PDF.</p>
                                 </div>
-                                <p className="text-[10px] text-blue-600 font-bold text-center">En este modo especial, el documento se amoldará a lo que escribas aquí.</p>
                             </div>
                         )}
 

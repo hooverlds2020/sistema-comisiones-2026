@@ -23,7 +23,6 @@ const EditarComision = () => {
   const [calcMedios, setCalcMedios] = useState("");
   const [calcMontoMedio, setCalcMontoMedio] = useState("");
 
-  // 🔥 NUEVO: Estado para manejar las filas de fechas dinámicas
   const [filasFechas, setFilasFechas] = useState([{ salida: '', regreso: '' }]);
 
   const [formData, setFormData] = useState({
@@ -75,7 +74,6 @@ const EditarComision = () => {
                     fecha_fin: formatDateForInput(orden.fecha_fin)
                 });
 
-                // 🔥 NUEVO: Desmenuzar las fechas de la BD en filas individuales
                 if (orden.es_fechas_multiples && orden.dias_salida) {
                     const salidas = orden.dias_salida.split('\n');
                     const regresos = (orden.dias_regreso || '').split('\n');
@@ -110,7 +108,6 @@ const EditarComision = () => {
     fetchAllData();
   }, [id, navigate]);
 
-  // 🔥 NUEVO: Sincronizar las filas de fechas con el formData invisiblemente
   useEffect(() => {
       const salidas = filasFechas.map(f => f.salida).join('\n');
       const regresos = filasFechas.map(f => f.regreso).join('\n');
@@ -132,10 +129,10 @@ const EditarComision = () => {
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  // 🔥 FUNCIONES DE FECHAS DINÁMICAS
+  // 🔥 LÍMITE AUMENTADO A 10
   const agregarFilaFecha = () => {
-      if (filasFechas.length >= 8) {
-          Swal.fire('Límite alcanzado', 'Para asegurar que el documento se genere correctamente con todas las firmas, el límite máximo es de 8 fechas salteadas por oficio. Si el viaje es más largo, considere dividirlo en dos comisiones.', 'info');
+      if (filasFechas.length >= 10) {
+          Swal.fire('Límite alcanzado', 'Para asegurar que el documento se genere correctamente con todas las firmas, el límite máximo es de 10 fechas salteadas por oficio. Si el viaje es más largo, considere dividirlo en dos comisiones.', 'info');
           return;
       }
       setFilasFechas([...filasFechas, { salida: '', regreso: '' }]);
@@ -223,7 +220,6 @@ const EditarComision = () => {
         usuario_modificador: JSON.parse(localStorage.getItem('usuarioActivo') || '{}').nombre || 'Sistema' 
     };
 
-    // Limpiar textos vacíos para que PostgreSQL no marque error
     if (!datosFinales.fecha_inicio) datosFinales.fecha_inicio = null;
     if (!datosFinales.fecha_fin) datosFinales.fecha_fin = null;
     if (!datosFinales.hora_salida) datosFinales.hora_salida = null;
@@ -433,7 +429,7 @@ const EditarComision = () => {
                                             <Plus size={14}/> Agregar otro día
                                         </button>
                                     </div>
-                                    <p className="text-[10px] text-blue-600 font-bold text-center mt-2">Máximo 8 días permitidos para proteger el diseño del PDF.</p>
+                                    <p className="text-[10px] text-blue-600 font-bold text-center mt-2">Máximo 10 días permitidos para proteger el diseño del PDF.</p>
                                 </div>
                             </div>
                         )}
