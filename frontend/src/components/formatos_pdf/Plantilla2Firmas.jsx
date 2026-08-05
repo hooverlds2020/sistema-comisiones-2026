@@ -73,7 +73,6 @@ const money = (amount) => {
     return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
 };
 
-// TUS MÁRGENES EXACTOS QUE QUEDARON PERFECTOS
 const PAD_TOP    = 110; 
 const PAD_BOTTOM = 55;  
 const PAD_LEFT   = 28;
@@ -88,6 +87,8 @@ const styles = StyleSheet.create({
   col100: { width: '100%', padding: 2 },
   col65: { width: '65%', padding: 2, borderRightWidth: 1, borderColor: '#000' },
   col35: { width: '35%', padding: 2 },
+  col25: { width: '25%', padding: 2, borderRightWidth: 1, borderColor: '#000' },
+  col25Last: { width: '25%', padding: 2 },
   col40: { width: '40%', padding: 2, borderRightWidth: 1, borderColor: '#000' },
   col30: { width: '30%', padding: 2, borderRightWidth: 1, borderColor: '#000' },
   col20: { width: '20%', padding: 2, borderRightWidth: 1, borderColor: '#000', justifyContent: 'center' },
@@ -168,9 +169,9 @@ const Plantilla2Firmas = ({ data, autoridades = [] }) => {
   const dynamicFontSize = esMuySaturado ? 5.5 : (esSaturado ? 7.0 : 8.0);
   const dynamicLineHeight = esMuySaturado ? 1.0 : (esSaturado ? 1.15 : 1.3);
   
-  // --- AUMENTAMOS LA ALTURA DE LAS FIRMAS PARA EMPUJAR HACIA ABAJO ---
-  const firmaH = esMuySaturado ? 65 : (esSaturado ? 85 : 115); // <- ¡Este 115 es el que empuja "Gastos a comprobar"!
-  const gapConformidad = esMuySaturado ? 15 : (esSaturado ? 25 : 40); 
+  // ¡AQUÍ ESTÁ LA MAGIA! Redujimos los espacios en blanco fuertemente para que se jale hacia arriba.
+  const firmaH = esMuySaturado ? 45 : (esSaturado ? 60 : 80); 
+  const gapConformidad = esMuySaturado ? 5 : (esSaturado ? 15 : 20); 
 
   return (
     <Document>
@@ -191,12 +192,13 @@ const Plantilla2Firmas = ({ data, autoridades = [] }) => {
             <View style={styles.col35}><Text style={styles.label}>ADSCRIPCIÓN:</Text><Text style={styles.value}>CESMECA</Text></View>
           </View>
           
-          <View style={{ flexDirection: 'column', borderBottomWidth: 1, borderColor: '#000', padding: 4, minHeight: 35 }}>
+          {/* MinHeight recortado */}
+          <View style={{ flexDirection: 'column', borderBottomWidth: 1, borderColor: '#000', padding: 4, minHeight: 30 }}>
             <Text style={styles.label}>MOTIVO DE LA COMISIÓN:</Text>
             <Text style={{ ...styles.value, textAlign: 'justify' }}>{data.motivo || ''}</Text>
           </View>
 
-          <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', minHeight: 26 }}>
+          <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', minHeight: 24 }}>
             <View style={{ width: '40%', borderRightWidth: 1, borderColor: '#000' }} />
             <View style={styles.col20}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>PERIODO</Text><Text style={{ fontSize: 7, textAlign: 'center' }}>{textoPeriodo}</Text></View>
             <View style={styles.col20}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>CUOTA DIARIA</Text><Text style={{ fontSize: 6, textAlign: 'center' }}>{data.cuota_diaria || ''}</Text></View>
@@ -224,14 +226,15 @@ const Plantilla2Firmas = ({ data, autoridades = [] }) => {
           <View style={styles.row}><View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>MEDIO DE TRANSPORTE: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{data.medio_transporte || ''}</Text></Text></View></View>
 
           {data.vehiculo_marca && (
-            <View style={styles.row}>
-              <View style={styles.col40}><Text style={styles.label}>MARCA:</Text><Text style={styles.value}>{data.vehiculo_marca}</Text></View>
-              <View style={styles.col30}><Text style={styles.label}>MODELO:</Text><Text style={styles.value}>{data.vehiculo_modelo}</Text></View>
-              <View style={{ width: '30%', padding: 2 }}><Text style={styles.label}>PLACAS:</Text><Text style={styles.value}>{data.vehiculo_placas}</Text></View>
+            <View style={[styles.row, { alignItems: 'stretch' }]}>
+              <View style={styles.col25}><Text style={styles.label}>MARCA:</Text><Text style={styles.value}>{data.vehiculo_marca || ' '}</Text></View>
+              <View style={styles.col25}><Text style={styles.label}>MODELO:</Text><Text style={styles.value}>{data.vehiculo_modelo || ' '}</Text></View>
+              <View style={styles.col25}><Text style={styles.label}>AÑO:</Text><Text style={styles.value}>{data.vehiculo_anio || ' '}</Text></View>
+              <View style={styles.col25Last}><Text style={styles.label}>PLACAS:</Text><Text style={styles.value}>{data.vehiculo_placas || ' '}</Text></View>
             </View>
           )}
 
-          <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', flex: 1.5, minHeight: 40, alignItems: 'stretch' }}>
+          <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#000', flex: 1.5, minHeight: 35, alignItems: 'stretch' }}>
             <View style={{ width: '100%', padding: 2, display: 'flex', flexDirection: 'column' }}>
               <View style={{ width: '50%' }}>
                 <View><Text style={{ fontSize: 7 }}><Text style={{ fontWeight: 'bold' }}>CLAVE PROGRAMÁTICA: </Text>{clavesFormateadas}</Text></View>
@@ -258,15 +261,15 @@ const Plantilla2Firmas = ({ data, autoridades = [] }) => {
             <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderTopWidth: 1, borderColor: '#000', backgroundColor: '#f0f0f0', minHeight: 13, alignItems: 'center' }}>
               <View style={{ width: '100%', padding: 2 }}><Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 7 }}>GASTOS A COMPROBAR</Text></View>
             </View>
-            <View style={{ padding: 4, paddingBottom: 15 }}>
+            <View style={{ padding: 4, paddingBottom: 10 }}>
               <Text style={{ fontSize: 6.8, textAlign: 'justify', color: '#000', lineHeight: 1.15, paddingHorizontal: 4 }}>
                 RECIBÍ: DE LA UNIVERSIDAD AUTÓNOMA DE CIENCIAS Y ARTES DE CHIAPAS LA CANTIDAD DE <Text style={{ fontWeight: 'bold' }}>{money(data.importe_total)}</Text>{' '}
                 <Text style={{ fontWeight: 'bold' }}>{textoImporteLetras}</Text>{' '}
                 POR EL (LOS) CONCEPTOS ANTES DESCRITOS, LOS CUALES DEBERÁN SER COMPROBADOS DE ACUERDO A LA FUENTE DE FINANCIAMIENTO O DEVUELTOS A MÁS TARDAR EL QUINTO DÍA POSTERIOR A LA CONCLUSIÓN DE LA COMISIÓN; DE NO CUMPLIRSE ESTA CONDICIÓN, DOY MI CONSENTIMIENTO Y AUTORIZACIÓN PARA QUE SE DESCUENTE EN LA NÓMINA DE SUELDOS MÁS PRÓXIMA O DE ALGUNA OTRA PERCEPCIÓN QUE ME CORRESPONDA (ARTÍCULO 33 DEL REGLAMENTO DE NORMAS Y TARIFAS PARA LA APLICACIÓN DE VIÁTICOS Y PASAJES DE LA UNICACH).
               </Text>
-              <View style={{ alignItems: 'center', paddingTop: 15, paddingBottom: 5 }}>
+              <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 0 }}>
                 <View style={{ alignItems: 'center' }}>
-                  <Text style={{ fontSize: 7, fontWeight: 'bold', marginBottom: esMuySaturado ? 5 : 10 }}>FIRMA DE CONFORMIDAD</Text>
+                  <Text style={{ fontSize: 7, fontWeight: 'bold', marginBottom: esMuySaturado ? 5 : 8 }}>FIRMA DE CONFORMIDAD</Text>
                   <View style={{ height: gapConformidad }} />
                   <View style={{ width: 230, alignItems: 'center' }}>
                     <View style={{ borderTopWidth: 1, borderColor: '#000', width: '100%', marginBottom: 2 }} />

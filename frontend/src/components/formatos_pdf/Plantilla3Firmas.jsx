@@ -73,7 +73,6 @@ const money = (amount) => {
     return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
 };
 
-// MÁRGENES ESTANDARIZADOS
 const PAD_TOP    = 110; 
 const PAD_BOTTOM = 55;  
 const PAD_LEFT   = 28;
@@ -89,6 +88,8 @@ const styles = StyleSheet.create({
   col100: { width: '100%', padding: 2 },
   col65: { width: '65%', padding: 2, borderRightWidth: 1, borderColor: '#000' },
   col35: { width: '35%', padding: 2 },
+  col25: { width: '25%', padding: 2, borderRightWidth: 1, borderColor: '#000' }, 
+  col25Last: { width: '25%', padding: 2 }, 
   col40: { width: '40%', padding: 2, borderRightWidth: 1, borderColor: '#000' },
   col30: { width: '30%', padding: 2, borderRightWidth: 1, borderColor: '#000' },
   col20: { width: '20%', padding: 2, borderRightWidth: 1, borderColor: '#000', justifyContent: 'center' },
@@ -173,7 +174,6 @@ const Plantilla3Firmas = ({ data, autoridades = [] }) => {
   const dynamicFontSize = isSuperCompact ? 5.5 : (isCompact ? 7.0 : 8.0);
   const dynamicLineHeight = isSuperCompact ? 1.0 : (isCompact ? 1.15 : 1.3);
   
-  // Ajuste de altura para firmas dobles
   const firmaH = isSuperCompact ? 35 : (isCompact ? 45 : 60); 
   const gapConformidad = isSuperCompact ? 5 : (isCompact ? 10 : 15);
 
@@ -220,11 +220,13 @@ const Plantilla3Firmas = ({ data, autoridades = [] }) => {
 
           <View style={styles.row}><View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>MEDIO DE TRANSPORTE: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{data.medio_transporte || ''}</Text></Text></View></View>
 
+          {/* AJUSTE MAESTRO AQUI: alignItems stretch y espacio en blanco de respaldo */}
           {data.vehiculo_marca && (
-            <View style={styles.row}>
-              <View style={styles.col40}><Text style={styles.label}>MARCA:</Text><Text style={styles.value}>{data.vehiculo_marca}</Text></View>
-              <View style={styles.col30}><Text style={styles.label}>MODELO:</Text><Text style={styles.value}>{data.vehiculo_modelo}</Text></View>
-              <View style={{ width: '30%', padding: 2 }}><Text style={styles.label}>PLACAS:</Text><Text style={styles.value}>{data.vehiculo_placas}</Text></View>
+            <View style={[styles.row, { alignItems: 'stretch' }]}>
+              <View style={styles.col25}><Text style={styles.label}>MARCA:</Text><Text style={styles.value}>{data.vehiculo_marca || ' '}</Text></View>
+              <View style={styles.col25}><Text style={styles.label}>MODELO:</Text><Text style={styles.value}>{data.vehiculo_modelo || ' '}</Text></View>
+              <View style={styles.col25}><Text style={styles.label}>AÑO:</Text><Text style={styles.value}>{data.vehiculo_anio || ' '}</Text></View>
+              <View style={styles.col25Last}><Text style={styles.label}>PLACAS:</Text><Text style={styles.value}>{data.vehiculo_placas || ' '}</Text></View>
             </View>
           )}
 

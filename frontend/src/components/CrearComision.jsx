@@ -54,7 +54,7 @@ const CrearComision = () => {
       fecha_inicio: '', fecha_fin: '', hora_salida: '', hora_regreso: '',
       es_fechas_multiples: false, periodo_texto: '', dias_salida: '', dias_regreso: '',
       medio_transporte: 'Terrestre',
-      vehiculo_marca: '', vehiculo_modelo: '', vehiculo_placas: '',
+      vehiculo_marca: '', vehiculo_modelo: '', vehiculo_placas: '', vehiculo_anio: '',
       cuota_diaria: '',
       importe_combustible: 0, importe_otros: 0, importe_pasajes_aereos: 0,
       importe_pasajes: 0, importe_congresos: 0, importe_viaticos: 0,
@@ -132,8 +132,8 @@ const CrearComision = () => {
     setUiTransporte(seleccion);
     let nuevosDatos = { ...formData };
     if (seleccion === 'Vehículo') { nuevosDatos.medio_transporte = 'Terrestre'; }
-    else if (seleccion === 'Autobús') { nuevosDatos.medio_transporte = 'Terrestre'; nuevosDatos.vehiculo_marca = ''; nuevosDatos.vehiculo_modelo = ''; nuevosDatos.vehiculo_placas = ''; }
-    else if (seleccion === 'Aéreo') { nuevosDatos.medio_transporte = 'Aéreo'; nuevosDatos.vehiculo_marca = ''; nuevosDatos.vehiculo_modelo = ''; nuevosDatos.vehiculo_placas = ''; }
+    else if (seleccion === 'Autobús') { nuevosDatos.medio_transporte = 'Terrestre'; nuevosDatos.vehiculo_marca = ''; nuevosDatos.vehiculo_modelo = ''; nuevosDatos.vehiculo_placas = ''; nuevosDatos.vehiculo_anio = ''; }
+    else if (seleccion === 'Aéreo') { nuevosDatos.medio_transporte = 'Aéreo'; nuevosDatos.vehiculo_marca = ''; nuevosDatos.vehiculo_modelo = ''; nuevosDatos.vehiculo_placas = ''; nuevosDatos.vehiculo_anio = ''; }
     setFormData(nuevosDatos);
   };
 
@@ -141,7 +141,7 @@ const CrearComision = () => {
       const index = e.target.value;
       if (index !== "") {
           const vehiculo = catalogoVehiculos[index];
-          setFormData(prev => ({ ...prev, vehiculo_marca: vehiculo.marca, vehiculo_modelo: vehiculo.modelo, vehiculo_placas: vehiculo.placas }));
+          setFormData(prev => ({ ...prev, vehiculo_marca: vehiculo.marca, vehiculo_modelo: vehiculo.modelo, vehiculo_placas: vehiculo.placas, vehiculo_anio: vehiculo.anio || '' }));
       }
   };
 
@@ -359,10 +359,11 @@ const CrearComision = () => {
                                     <label className="block text-xs font-bold text-blue-800 mb-1">Vehículo Oficial CESMECA</label>
                                     <select onChange={handleVehiculoChange} className="w-full p-2 border border-blue-300 rounded bg-white text-sm"><option value="">-- Seleccionar --</option>{catalogoVehiculos.map((v, idx) => (<option key={idx} value={idx}>{v.marca} {v.modelo} ({v.placas})</option>))}</select>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3 rounded border border-gray-200">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3 rounded border border-gray-200">
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Marca</label><input name="vehiculo_marca" value={formData.vehiculo_marca} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Modelo</label><input name="vehiculo_modelo" value={formData.vehiculo_modelo} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Placas</label><input name="vehiculo_placas" value={formData.vehiculo_placas} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
+                                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Año</label><input name="vehiculo_anio" value={formData.vehiculo_anio} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                 </div>
                             </div>
                         ) : (<div className="p-4 bg-gray-100 rounded text-center text-gray-500 text-xs italic border">No requiere datos de vehículo.</div>)}

@@ -32,7 +32,7 @@ const EditarComision = () => {
     hora_salida: '', hora_regreso: '', 
     es_fechas_multiples: false, periodo_texto: '', dias_salida: '', dias_regreso: '',
     medio_transporte: 'Terrestre', 
-    vehiculo_marca: '', vehiculo_modelo: '', vehiculo_placas: '',
+    vehiculo_marca: '', vehiculo_modelo: '', vehiculo_placas: '', vehiculo_anio: '',
     cuota_diaria: '', 
     importe_combustible: 0, importe_otros: 0, importe_pasajes_aereos: 0,    
     importe_pasajes: 0, importe_congresos: 0, importe_viaticos: 0,          
@@ -71,7 +71,8 @@ const EditarComision = () => {
                     dias_regreso: orden.dias_regreso || '',
                     fecha_elaboracion: formatDateForInput(orden.fecha_elaboracion) || formatDateForInput(new Date()),
                     fecha_inicio: formatDateForInput(orden.fecha_inicio),
-                    fecha_fin: formatDateForInput(orden.fecha_fin)
+                    fecha_fin: formatDateForInput(orden.fecha_fin),
+                    vehiculo_anio: orden.vehiculo_anio || ''
                 });
 
                 if (orden.es_fechas_multiples && orden.dias_salida) {
@@ -129,7 +130,6 @@ const EditarComision = () => {
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  // 🔥 LÍMITE AUMENTADO A 10
   const agregarFilaFecha = () => {
       if (filasFechas.length >= 10) {
           Swal.fire('Límite alcanzado', 'Para asegurar que el documento se genere correctamente con todas las firmas, el límite máximo es de 10 fechas salteadas por oficio. Si el viaje es más largo, considere dividirlo en dos comisiones.', 'info');
@@ -160,8 +160,8 @@ const EditarComision = () => {
     setUiTransporte(seleccion);
     let nuevosDatos = { ...formData };
     if (seleccion === 'Vehículo') { nuevosDatos.medio_transporte = 'Terrestre'; } 
-    else if (seleccion === 'Autobús') { nuevosDatos.medio_transporte = 'Terrestre'; nuevosDatos.vehiculo_marca = ''; nuevosDatos.vehiculo_modelo = ''; nuevosDatos.vehiculo_placas = ''; } 
-    else if (seleccion === 'Aéreo') { nuevosDatos.medio_transporte = 'Aéreo'; nuevosDatos.vehiculo_marca = ''; nuevosDatos.vehiculo_modelo = ''; nuevosDatos.vehiculo_placas = ''; }
+    else if (seleccion === 'Autobús') { nuevosDatos.medio_transporte = 'Terrestre'; nuevosDatos.vehiculo_marca = ''; nuevosDatos.vehiculo_modelo = ''; nuevosDatos.vehiculo_placas = ''; nuevosDatos.vehiculo_anio = ''; } 
+    else if (seleccion === 'Aéreo') { nuevosDatos.medio_transporte = 'Aéreo'; nuevosDatos.vehiculo_marca = ''; nuevosDatos.vehiculo_modelo = ''; nuevosDatos.vehiculo_placas = ''; nuevosDatos.vehiculo_anio = ''; }
     setFormData(nuevosDatos);
   };
 
@@ -169,7 +169,7 @@ const EditarComision = () => {
       const index = e.target.value;
       if (index !== "") {
           const vehiculo = catalogoVehiculos[index];
-          setFormData(prev => ({ ...prev, vehiculo_marca: vehiculo.marca, vehiculo_modelo: vehiculo.modelo, vehiculo_placas: vehiculo.placas }));
+          setFormData(prev => ({ ...prev, vehiculo_marca: vehiculo.marca, vehiculo_modelo: vehiculo.modelo, vehiculo_placas: vehiculo.placas, vehiculo_anio: vehiculo.anio || '' }));
       }
   };
 
@@ -429,7 +429,7 @@ const EditarComision = () => {
                                             <Plus size={14}/> Agregar otro día
                                         </button>
                                     </div>
-                                    <p className="text-[10px] text-blue-600 font-bold text-center mt-2">Máximo 10 días permitidos para proteger el diseño del PDF.</p>
+                                    <p className="text-[10px] text-blue-600 font-bold text-center mt-2">Máximo 10 días permitidos.</p>
                                 </div>
                             </div>
                         )}
@@ -462,10 +462,11 @@ const EditarComision = () => {
                                         ))}
                                     </select>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3 rounded border border-gray-200">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3 rounded border border-gray-200">
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Marca</label><input name="vehiculo_marca" value={formData.vehiculo_marca} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Modelo</label><input name="vehiculo_modelo" value={formData.vehiculo_modelo} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Placas</label><input name="vehiculo_placas" value={formData.vehiculo_placas} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
+                                    <div><label className="block text-xs font-bold text-gray-700 mb-1">Año</label><input name="vehiculo_anio" value={formData.vehiculo_anio} onChange={handleChange} className="w-full p-2 border rounded text-sm bg-gray-50" /></div>
                                 </div>
                             </div>
                         ) : (<div className="p-4 bg-gray-100 rounded text-center text-gray-500 text-xs italic border">No requiere datos de vehículo.</div>)}
@@ -511,11 +512,11 @@ const EditarComision = () => {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pt-4 border-t border-orange-200">
                     <div><label className="block text-xs font-bold text-gray-600 mb-1">26111 - Combustible</label><input type="number" step="0.01" name="importe_combustible" value={formData.importe_combustible} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37111 - Pasajes Aéreos</label><input type="number" step="0.01" name="importe_pasajes_aereos" value={formData.importe_pasajes_aereos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37211 - Pasajes Terrestres</label><input type="number" step="0.01" name="importe_pasajes" value={formData.importe_pasajes} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37511 - Viáticos</label><input type="number" step="0.01" name="importe_viaticos" value={formData.importe_viaticos} onChange={handleChange} className="w-full pl-6 p-2 border rounded border-blue-400 bg-blue-50 focus:bg-white" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">38301 - Congresos y Conv.</label><input type="number" step="0.01" name="importe_congresos" value={formData.importe_congresos} onChange={handleChange} className="w-full pl-6 p-2 border rounded bg-white" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">39202 - Otros Impuestos</label><input type="number" step="0.01" name="importe_otros" value={formData.importe_otros} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37111 - Pasajes Aéreos</label><input type="number" step="0.01" name="importe_pasajes_aereos" value={formData.importe_pasajes_aereos} onChange={handleChange} className="w-full p-2 border rounded bg-white" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37211 - Pasajes Terrestres</label><input type="number" step="0.01" name="importe_pasajes" value={formData.importe_pasajes} onChange={handleChange} className="w-full p-2 border rounded" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37511 - Viáticos</label><input type="number" step="0.01" name="importe_viaticos" value={formData.importe_viaticos} onChange={handleChange} className="w-full p-2 border rounded border-blue-400 bg-blue-50 focus:bg-white" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">38301 - Congresos y Conv.</label><input type="number" step="0.01" name="importe_congresos" value={formData.importe_congresos} onChange={handleChange} className="w-full p-2 border rounded bg-white" /></div>
+                    <div><label className="block text-xs font-bold text-gray-600 mb-1">39202 - Otros Impuestos</label><input type="number" step="0.01" name="importe_otros" value={formData.importe_otros} onChange={handleChange} className="w-full p-2 border rounded" /></div>
                 </div>
 
                 <div className="mt-6 p-4 bg-orange-100 rounded border border-orange-300 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left gap-2 sm:gap-0">

@@ -5,7 +5,8 @@ const VehiculosTable = () => {
   const [vehiculos, setVehiculos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [mostrarModal, setMostrarModal] = useState(false);
-  const [form, setForm] = useState({ id: null, marca: '', modelo: '', placas: '' });
+  // Agregamos 'anio' al estado inicial del formulario
+  const [form, setForm] = useState({ id: null, marca: '', modelo: '', anio: '', placas: '' });
 
   const [paginaActual, setPaginaActual] = useState(1);
   const itemsPorPagina = 10;
@@ -43,16 +44,25 @@ const VehiculosTable = () => {
 
   const abrirModal = (vehiculo = null) => {
     if (vehiculo) {
-      setForm(vehiculo);
+      // Aseguramos cargar el año si existe
+      setForm({
+        id: vehiculo.id,
+        marca: vehiculo.marca || '',
+        modelo: vehiculo.modelo || '',
+        anio: vehiculo.anio || '',
+        placas: vehiculo.placas || ''
+      });
     } else {
-      setForm({ id: null, marca: '', modelo: '', placas: '' });
+      setForm({ id: null, marca: '', modelo: '', anio: '', placas: '' });
     }
     setMostrarModal(true);
   };
 
+  // Agregamos 'anio' a los filtros de búsqueda
   const filtrados = vehiculos.filter(v => 
     v.marca?.toLowerCase().includes(busqueda.toLowerCase()) || 
     v.modelo?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    v.anio?.toLowerCase().includes(busqueda.toLowerCase()) ||
     v.placas?.toLowerCase().includes(busqueda.toLowerCase())
   );
   
@@ -83,7 +93,7 @@ const VehiculosTable = () => {
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
           <input 
-            type="text" placeholder="Buscar por marca, modelo o placas..." 
+            type="text" placeholder="Buscar por marca, modelo, año o placas..." 
             className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
             value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
           />
@@ -96,6 +106,7 @@ const VehiculosTable = () => {
                 <tr className="bg-gray-50 border-b border-gray-200 text-[10px] uppercase font-black text-gray-500 tracking-widest">
                   <th className="px-6 py-4">Marca</th>
                   <th className="px-6 py-4">Modelo</th>
+                  <th className="px-6 py-4">Año</th>
                   <th className="px-6 py-4">Placas</th>
                   <th className="px-6 py-4 text-center">Acciones</th>
                 </tr>
@@ -105,6 +116,7 @@ const VehiculosTable = () => {
                   <tr key={v.id} className="hover:bg-blue-50/50 transition-colors">
                     <td className="px-6 py-4 font-bold text-gray-800 text-sm">{v.marca}</td>
                     <td className="px-6 py-4 font-medium text-gray-600 text-sm">{v.modelo}</td>
+                    <td className="px-6 py-4 font-medium text-gray-600 text-sm">{v.anio || '-'}</td>
                     <td className="px-6 py-4 font-black text-blue-900 text-sm">{v.placas}</td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
@@ -116,7 +128,7 @@ const VehiculosTable = () => {
                 ))}
                 {itemsActuales.length === 0 && (
                   <tr>
-                    <td colSpan="4" className="px-6 py-10 text-center text-gray-500 font-medium">
+                    <td colSpan="5" className="px-6 py-10 text-center text-gray-500 font-medium">
                       No se encontraron vehículos registrados.
                     </td>
                   </tr>
@@ -167,9 +179,15 @@ const VehiculosTable = () => {
                 <label className="block text-sm font-bold text-gray-700 mb-1">Marca</label>
                 <input required type="text" placeholder="Ej. NISSAN" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 uppercase" value={form.marca} onChange={e => setForm({...form, marca: e.target.value.toUpperCase()})} />
               </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Modelo</label>
-                <input required type="text" placeholder="Ej. TSURU 2015" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 uppercase" value={form.modelo} onChange={e => setForm({...form, modelo: e.target.value.toUpperCase()})} />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Modelo</label>
+                  <input required type="text" placeholder="Ej. TSURU" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 uppercase" value={form.modelo} onChange={e => setForm({...form, modelo: e.target.value.toUpperCase()})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Año</label>
+                  <input type="text" placeholder="Ej. 2015" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 uppercase" value={form.anio} onChange={e => setForm({...form, anio: e.target.value.toUpperCase()})} />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">Placas</label>
