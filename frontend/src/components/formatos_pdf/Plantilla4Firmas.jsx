@@ -101,31 +101,27 @@ const styles = StyleSheet.create({
   colGastoMonto: { width: '25%', padding: 1, paddingRight: 5, alignItems: 'flex-end' },
 });
 
-const Firma = ({ nombre, cargo }) => (
+const Firma = ({ nombre, cargo, small }) => (
   <View style={{ alignItems: 'center', paddingBottom: 4, justifyContent: 'flex-end', width: '100%', height: '100%' }}>
     <View style={{ borderTopWidth: 1, borderColor: '#000', width: '80%', marginBottom: 2 }} />
-    <Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{nombre}</Text>
-    <Text style={{ fontSize: 6, textAlign: 'center' }}>{cargo}</Text>
+    <Text style={{ fontSize: small ? 6.3 : 7, fontWeight: 'bold', textAlign: 'center' }}>{nombre}</Text>
+    <Text style={{ fontSize: small ? 5.3 : 6, textAlign: 'center' }}>{cargo}</Text>
   </View>
 );
 
-const FirmaHeader = ({ left, right }) => (
+const FirmaHeader3 = ({ left, mid, right }) => (
   <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderTopWidth: 1, borderColor: '#000', backgroundColor: '#f0f0f0', minHeight: 13, alignItems: 'center' }}>
-    <View style={{ width: right ? '50%' : '100%', padding: 2, borderRightWidth: right ? 1 : 0, borderColor: '#000' }}>
-      <Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{left}</Text>
-    </View>
-    {right && (
-      <View style={{ width: '50%', padding: 2 }}>
-        <Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{right}</Text>
-      </View>
-    )}
+    <View style={{ width: '33.33%', padding: 2, borderRightWidth: 1, borderColor: '#000' }}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{left}</Text></View>
+    <View style={{ width: '33.33%', padding: 2, borderRightWidth: 1, borderColor: '#000' }}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{mid}</Text></View>
+    <View style={{ width: '33.34%', padding: 2 }}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{right}</Text></View>
   </View>
 );
 
-const FilaDosFirmas = ({ izq, der, altura }) => (
+const FilaTresFirmas = ({ izq, mid, der, altura }) => (
   <View style={{ flexDirection: 'row', borderBottomWidth: 0, borderColor: '#000', height: altura, alignItems: 'flex-end' }}>
-    <View style={{ width: '50%', borderRightWidth: 1, borderColor: '#000', height: '100%' }}><Firma nombre={izq.nombre} cargo={izq.cargo} /></View>
-    <View style={{ width: '50%', height: '100%' }}><Firma nombre={der.nombre} cargo={der.cargo} /></View>
+    <View style={{ width: '33.33%', borderRightWidth: 1, borderColor: '#000', height: '100%' }}><Firma nombre={izq.nombre} cargo={izq.cargo} small /></View>
+    <View style={{ width: '33.33%', borderRightWidth: 1, borderColor: '#000', height: '100%' }}><Firma nombre={mid.nombre} cargo={mid.cargo} small /></View>
+    <View style={{ width: '33.34%', height: '100%' }}><Firma nombre={der.nombre} cargo={der.cargo} small /></View>
   </View>
 );
 
@@ -249,10 +245,8 @@ const Plantilla4Firmas = ({ data, autoridades = [] }) => {
           <View style={{ flex: 1 }} /> 
 
           <View style={{ flexShrink: 0 }}>
-            <FirmaHeader left="COMISIONADO" right="AUTORIZA" />
-            <FilaDosFirmas izq={{ nombre: comisionadoNombre, cargo: categoriaComisionado }} der={DIRECTOR} altura={firmaH} />
-            <FirmaHeader left="Vo. Bo." right="Vo. Bo." />
-            <FilaDosFirmas izq={SECRETARIO} der={RECTORA} altura={firmaH} />
+            <FirmaHeader3 left="AUTORIZA" mid="Vo. Bo." right="COMISIONADO" />
+            <FilaTresFirmas izq={RECTORA} mid={SECRETARIO} der={{ nombre: comisionadoNombre, cargo: categoriaComisionado }} altura={firmaH} />
             <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderTopWidth: 1, borderColor: '#000', backgroundColor: '#f0f0f0', minHeight: 13, alignItems: 'center' }}>
               <View style={{ width: '100%', padding: 2 }}><Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 7 }}>GASTOS A COMPROBAR</Text></View>
             </View>
