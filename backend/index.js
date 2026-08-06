@@ -4,6 +4,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -35,6 +36,37 @@ pool.query('SELECT NOW()', (err, res) => {
 
 const limpiar = (valor) => (valor === '' || valor === undefined ? null : valor);
 const limpiarNumero = (valor) => (valor === '' || valor === undefined || isNaN(valor) ? 0 : valor);
+
+const transporterEmail = nodemailer.createTransport({
+  service: 'gmail',
+  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+});
+
+const enviarCorreo = async ({ to, subject, html, attachments }) => {
+  try {
+    await transporterEmail.sendMail({
+      from: `"Sistema de Comisiones CESMECA" <${process.env.EMAIL_USER}>`,
+      to, subject, html, attachments: attachments || [],
+    });
+    console.log(`Correo enviado a ${to}: ${subject}`);
+    return true;
+  } catch (err) {
+    console.error('Error al enviar correo:', err.message);
+    return false;
+  }
+};
+
+app.post('/api/test-email', async (req, res) => {
+  const destino = req.body.to;
+  if (!destino) return res.status(400).json({ error: 'Falta el campo "to"' });
+  const ok = await enviarCorreo({
+    to: destino,
+    subject: 'Prueba - Sistema de Comisiones CESMECA',
+    html: '<p>Este es un correo de prueba del Sistema de Órdenes de Comisión de CESMECA. Si lo recibiste, la configuración de correo funciona correctamente.</p>',
+  });
+  if (ok) res.json({ message: 'Correo enviado' });
+  else res.status(500).json({ error: 'Fallo el envio, revisa los logs del contenedor' });
+});
 
 const enviarAlertaTelegram = async (mensaje) => {
   const TOKEN = process.env.TELEGRAM_BOT_TOKEN; const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
