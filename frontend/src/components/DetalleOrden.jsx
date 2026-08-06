@@ -133,6 +133,25 @@ const DetalleOrden = () => {
           </div>
         </div>
 
+        {orden.revision_estatus && (
+          <div className={`mb-4 rounded-xl p-4 border-2 ${
+            orden.revision_estatus === 'Aprobada' ? 'bg-emerald-50 border-emerald-300' :
+            orden.revision_estatus === 'Con Observaciones' ? 'bg-red-50 border-red-300' :
+            'bg-amber-50 border-amber-300'
+          }`}>
+            <p className={`text-xs font-black uppercase tracking-widest mb-1 ${
+              orden.revision_estatus === 'Aprobada' ? 'text-emerald-700' :
+              orden.revision_estatus === 'Con Observaciones' ? 'text-red-700' :
+              'text-amber-700'
+            }`}>
+              Estado de revisión: {orden.revision_estatus}
+            </p>
+            {orden.revision_estatus === 'Con Observaciones' && orden.observaciones_revision && (
+              <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{orden.observaciones_revision}</p>
+            )}
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl shadow-2xl h-[70vh] md:h-[85vh] overflow-hidden border border-gray-300 flex flex-col">
           {!pdfUrl && !pdfErrorPreview && (
             <div className="flex-1 flex flex-col items-center justify-center bg-gray-50">
