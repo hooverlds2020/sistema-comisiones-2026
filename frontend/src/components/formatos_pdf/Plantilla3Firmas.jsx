@@ -1,8 +1,13 @@
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
 
-const numeroALetras = (amount) => {
-  if (!amount || isNaN(amount)) return 'CERO PESOS 00/100 M.N.';
+const NOMBRES_MONEDA = { MXN: 'PESOS', USD: 'DÓLARES AMERICANOS', EUR: 'EUROS' };
+const SUFIJO_MONEDA = { MXN: 'M.N.', USD: 'USD', EUR: 'EUR' };
+
+const numeroALetras = (amount, moneda = 'MXN') => {
+  const nombreMoneda = NOMBRES_MONEDA[moneda] || 'PESOS';
+  const sufijo = SUFIJO_MONEDA[moneda] || 'M.N.';
+  if (!amount || isNaN(amount)) return `CERO ${nombreMoneda} 00/100 ${sufijo}`;
   const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
   const decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
   const diez_veinte = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISEIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
@@ -20,7 +25,7 @@ const numeroALetras = (amount) => {
       }
       if (resto > 0 || miles === 0) letras += convertirGrupo(resto, unidades, decenas, diez_veinte, centenas);
   } else letras = 'CANTIDAD MUY GRANDE';
-  return `(${letras.trim()} PESOS ${centavos.toString().padStart(2, '0')}/100 M.N.)`;
+  return `(${letras.trim()} ${nombreMoneda} ${centavos.toString().padStart(2, '0')}/100 ${sufijo})`;
 };
 
 const convertirGrupo = (n, u, d, dv, c) => {
@@ -68,9 +73,11 @@ const formatHora = (horaString) => {
     return `${horaString.substring(0, 5)} hrs.`;
 };
 
-const money = (amount) => {
+const money = (amount, moneda = 'MXN') => {
     const val = parseFloat(amount) || 0;
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
+    const locale = moneda === 'MXN' ? 'es-MX' : 'en-US';
+    const formatted = new Intl.NumberFormat(locale, { style: 'currency', currency: moneda }).format(val);
+    return moneda === 'MXN' ? formatted : `${formatted} ${moneda}`;
 };
 
 const PAD_TOP    = 110; 
@@ -146,7 +153,7 @@ const Plantilla3Firmas = ({ data, autoridades = [] }) => {
   const RECTORA = getAutoridad("RECTORA");
   const comisionadoNombre = (data.comisionado || '').toUpperCase();
   const categoriaComisionado = (data.categoria || '').toUpperCase();
-  const textoImporteLetras = numeroALetras(data.importe_total);
+  const textoImporteLetras = numeroALetras(data.importe_total, data.moneda);
   const textoFechaLugar = `SAN CRISTOBAL DE LAS CASAS, CHIAPAS; ${formatFechaLarga(data.fecha_elaboracion)}`;
   const tieneGastos = parseFloat(data.importe_total) > 0;
   const clavesFormateadas = (tieneGastos && data.clave_programatica) ? data.clave_programatica.replace(/  Y  /g, ', ') : 'NO APLICA - SIN RECURSO ASIGNADO';
@@ -202,7 +209,7 @@ const Plantilla3Firmas = ({ data, autoridades = [] }) => {
             <View style={{ width: '40%', borderRightWidth: 1, borderColor: '#000' }} />
             <View style={styles.col20}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>PERIODO</Text><Text style={{ fontSize: 7, textAlign: 'center' }}>{textoPeriodo}</Text></View>
             <View style={styles.col20}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>CUOTA DIARIA</Text><Text style={{ fontSize: 6, textAlign: 'center' }}>{data.cuota_diaria || ''}</Text></View>
-            <View style={styles.col20Last}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>IMPORTE ACORDADO</Text><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{money(data.importe_viaticos)}</Text></View>
+            <View style={styles.col20Last}><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>IMPORTE ACORDADO</Text><Text style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>{money(data.importe_viaticos, data.moneda)}</Text></View>
           </View>
 
           <View style={styles.row}><View style={styles.col100}><Text style={{ fontSize: 7, fontWeight: 'bold' }}>LUGAR DE COMISIÓN: <Text style={{ fontWeight: 'normal', fontSize: 8 }}>{data.lugar || ''}</Text></Text></View></View>
@@ -234,17 +241,17 @@ const Plantilla3Firmas = ({ data, autoridades = [] }) => {
             <View style={{ width: '100%', padding: 2, display: 'flex', flexDirection: 'column' }}>
               <View style={{ width: '50%' }}>
                 <View><Text style={{ fontSize: 7 }}><Text style={{ fontWeight: 'bold' }}>CLAVE PROGRAMÁTICA: </Text>{clavesFormateadas}</Text></View>
-                {parseFloat(data.importe_combustible) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>26111.- COMBUSTIBLE</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_combustible)}</Text></View></View>}
-                {parseFloat(data.importe_pasajes_aereos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>37111.- PASAJES NACIONALES AÉREOS</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_pasajes_aereos)}</Text></View></View>}
-                {parseFloat(data.importe_pasajes) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>37211.- PASAJES NACIONALES TERRESTRES</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_pasajes)}</Text></View></View>}
-                {parseFloat(data.importe_viaticos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>37602.- VIÁTICOS EN EL EXTRANJERO</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_viaticos)}</Text></View></View>}
-                {parseFloat(data.importe_congresos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>38301.- CONGRESOS Y CONVENCIONES</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_congresos)}</Text></View></View>}
-                {parseFloat(data.importe_otros) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>39202.- OTROS IMPTOS. Y DERECHOS</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_otros)}</Text></View></View>}
+                {parseFloat(data.importe_combustible) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>26111.- COMBUSTIBLE</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_combustible, data.moneda)}</Text></View></View>}
+                {parseFloat(data.importe_pasajes_aereos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>37111.- PASAJES NACIONALES AÉREOS</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_pasajes_aereos, data.moneda)}</Text></View></View>}
+                {parseFloat(data.importe_pasajes) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>37211.- PASAJES NACIONALES TERRESTRES</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_pasajes, data.moneda)}</Text></View></View>}
+                {parseFloat(data.importe_viaticos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>37602.- VIÁTICOS EN EL EXTRANJERO</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_viaticos, data.moneda)}</Text></View></View>}
+                {parseFloat(data.importe_congresos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>38301.- CONGRESOS Y CONVENCIONES</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_congresos, data.moneda)}</Text></View></View>}
+                {parseFloat(data.importe_otros) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>39202.- OTROS IMPTOS. Y DERECHOS</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_otros, data.moneda)}</Text></View></View>}
               </View>
               <View style={{ flex: 1 }} />
               <View style={{ flexDirection: 'row', width: '50%', borderTopWidth: 1, borderTopStyle: 'dashed', borderColor: '#000', marginTop: 1, paddingTop: 1 }}>
                 <View style={styles.colGastoDesc}><Text style={{ fontWeight: 'bold' }}>IMPORTE TOTAL:</Text></View>
-                <View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_total)}</Text></View>
+                <View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_total, data.moneda)}</Text></View>
               </View>
             </View>
           </View>
@@ -264,7 +271,7 @@ const Plantilla3Firmas = ({ data, autoridades = [] }) => {
             </View>
             <View style={{ padding: 4, paddingBottom: 15 }}>
               <Text style={{ fontSize: 6.8, textAlign: 'justify', color: '#000', lineHeight: 1.15, paddingHorizontal: 4 }}>
-                RECIBÍ: DE LA UNIVERSIDAD AUTÓNOMA DE CIENCIAS Y ARTES DE CHIAPAS LA CANTIDAD DE <Text style={{ fontWeight: 'bold' }}>{money(data.importe_total)}</Text>{' '}
+                RECIBÍ: DE LA UNIVERSIDAD AUTÓNOMA DE CIENCIAS Y ARTES DE CHIAPAS LA CANTIDAD DE <Text style={{ fontWeight: 'bold' }}>{money(data.importe_total, data.moneda)}</Text>{' '}
                 <Text style={{ fontWeight: 'bold' }}>{textoImporteLetras}</Text>{' '}
                 POR EL (LOS) CONCEPTOS ANTES DESCRITOS, LOS CUALES DEBERÁN SER COMPROBADOS DE ACUERDO A LA FUENTE DE FINANCIAMIENTO O DEVUELTOS A MÁS TARDAR EL QUINTO DÍA POSTERIOR A LA CONCLUSIÓN DE LA COMISIÓN; DE NO CUMPLIRSE ESTA CONDICIÓN, DOY MI CONSENTIMIENTO Y AUTORIZACIÓN PARA QUE SE DESCUENTE EN LA NÓMINA DE SUELDOS MÁS PRÓXIMA O DE ALGUNA OTRA PERCEPCIÓN QUE ME CORRESPONDA (ARTÍCULO 33 DEL REGLAMENTO DE NORMAS Y TARIFAS PARA LA APLICACIÓN DE VIÁTICOS Y PASAJES DE LA UNICACH).
               </Text>
