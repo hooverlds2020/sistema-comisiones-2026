@@ -26,7 +26,7 @@ const EditarComision = () => {
   const [filasFechas, setFilasFechas] = useState([{ salida: '', regreso: '' }]);
 
   const [formData, setFormData] = useState({
-    fecha_elaboracion: '', tipo_comision: 'Nacional', 
+    fecha_elaboracion: '', tipo_comision: 'Nacional', moneda: 'MXN', 
     comisionado: '', rfc: '', categoria: '', adscripcion: '',
     lugar: '', motivo: '', fecha_inicio: '', fecha_fin: '',
     hora_salida: '', hora_regreso: '', 
@@ -72,7 +72,8 @@ const EditarComision = () => {
                     fecha_elaboracion: formatDateForInput(orden.fecha_elaboracion) || formatDateForInput(new Date()),
                     fecha_inicio: formatDateForInput(orden.fecha_inicio),
                     fecha_fin: formatDateForInput(orden.fecha_fin),
-                    vehiculo_anio: orden.vehiculo_anio || ''
+                    vehiculo_anio: orden.vehiculo_anio || '',
+                    moneda: orden.moneda || 'MXN'
                 });
 
                 if (orden.es_fechas_multiples && orden.dias_salida) {
@@ -307,6 +308,16 @@ const EditarComision = () => {
                             <option value="Nacional">NACIONAL / ESTATAL</option>
                             <option value="Internacional">INTERNACIONAL</option>
                         </select>
+                        {String(formData.tipo_comision).toUpperCase().includes("INTERNACIONAL") && (
+                            <div className="mt-2">
+                                <label className="block text-xs font-bold text-indigo-800 mb-1">MONEDA</label>
+                                <select name="moneda" value={formData.moneda} onChange={handleChange} className="w-full p-2 border rounded font-bold text-indigo-900 bg-white">
+                                    <option value="MXN">PESOS MEXICANOS (MXN)</option>
+                                    <option value="USD">DÓLARES AMERICANOS (USD)</option>
+                                    <option value="EUR">EUROS (EUR)</option>
+                                </select>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="bg-gray-100 p-4 rounded-md border border-gray-200 flex items-center gap-4">
