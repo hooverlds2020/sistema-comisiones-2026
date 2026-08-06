@@ -67,19 +67,7 @@ const DetalleOrden = () => {
     cargarDatos();
   }, [id]);
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mb-4"></div>
-      <p className="font-black text-blue-900 text-xs uppercase tracking-widest">Cargando datos...</p>
-    </div>
-  );
-  
-  if (!orden) return <div className="p-20 text-center text-red-600 font-bold">Orden no encontrada.</div>;
-
-  // 🔴 AQUÍ ESTÁ LA MAGIA: Construimos el nombre perfecto del archivo
-  const numeroFolio = String(orden.numero_folio || '000').padStart(3, '0');
-  const nombreArchivo = `${numeroFolio} - ${orden.comisionado}.pdf`;
-  const documentoPdf = useMemo(() => <ComisionPDF data={orden} autoridades={autoridades} />, [orden, autoridades]);
+  const documentoPdf = useMemo(() => (orden ? <ComisionPDF data={orden} autoridades={autoridades} /> : null), [orden, autoridades]);
 
   useEffect(() => {
     let cancelado = false;
@@ -99,6 +87,19 @@ const DetalleOrden = () => {
   useEffect(() => {
     return () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); };
   }, [pdfUrl]);
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mb-4"></div>
+      <p className="font-black text-blue-900 text-xs uppercase tracking-widest">Cargando datos...</p>
+    </div>
+  );
+  
+  if (!orden) return <div className="p-20 text-center text-red-600 font-bold">Orden no encontrada.</div>;
+
+  // 🔴 AQUÍ ESTÁ LA MAGIA: Construimos el nombre perfecto del archivo
+  const numeroFolio = String(orden.numero_folio || '000').padStart(3, '0');
+  const nombreArchivo = `${numeroFolio} - ${orden.comisionado}.pdf`;
 
   return (
     <div className="p-4 md:p-8 bg-slate-100 min-h-screen">
