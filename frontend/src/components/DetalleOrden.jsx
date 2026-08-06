@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PDFDownloadLink, BlobProvider } from '@react-pdf/renderer';
-import { ArrowLeft, Download, FileText, Eye } from 'lucide-react';
+import { ArrowLeft, Download, FileText, Eye, Send } from 'lucide-react';
 import ComisionPDF from './ComisionPDF';
 
 const DetalleOrden = () => {
@@ -10,6 +10,41 @@ const DetalleOrden = () => {
   const [orden, setOrden] = useState(null);
   const [autoridades, setAutoridades] = useState([]); 
   const [loading, setLoading] = useState(true);
+  const [pdfBlob, setPdfBlob] = useState(null);
+  const [enviandoRevision, setEnviandoRevision] = useState(false);
+
+  const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+  const enviarARevision = async () => {
+    if (!pdfBlob) return;
+    setEnviandoRevision(true);
+    try {
+      const usuarioActivo = JSON.parse(localStorage.getItem('usuarioActivo') || '{}');
+      const pdfBase64 = await blobToBase64(pdfBlob);
+      const res = await fetch(`/api/ordenes/${orden.id}/revision`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'enviar_revision', usuario: usuarioActivo.nombre || 'Sistema', pdfBase64 }),
+      });
+      if (res.ok) {
+        const actualizada = await res.json();
+        setOrden(actualizada);
+        alert('Orden enviada a revisión correctamente.');
+      } else {
+        alert('No se pudo enviar a revisión. Intenta de nuevo.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error al enviar a revisión.');
+    } finally {
+      setEnviandoRevision(false);
+    }
+  };
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -52,23 +87,34 @@ const DetalleOrden = () => {
             <ArrowLeft size={18}/> Volver al Listado
           </button>
           
-          <PDFDownloadLink
-            document={<ComisionPDF data={orden} autoridades={autoridades} />} 
-            fileName={nombreArchivo} // 🔴 APLICAMOS EL NOMBRE AL BOTÓN VERDE
-            className="flex items-center justify-center gap-2 bg-green-600 text-white px-8 py-3 rounded-lg font-black shadow-lg hover:bg-green-700 transition-all active:scale-95 text-xs uppercase w-full md:w-auto"
-          >
-            {({ loading }) => (
-              <>
-                <Download size={18} />
-                {loading ? 'Preparando archivo...' : 'Descargar Orden PDF'}
-              </>
-            )}
-          </PDFDownloadLink>
+          <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+            <button
+              onClick={enviarARevision}
+              disabled={!pdfBlob || enviandoRevision}
+              className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-8 py-3 rounded-lg font-black shadow-lg hover:bg-indigo-700 transition-all active:scale-95 text-xs uppercase w-full md:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send size={18} />
+              {enviandoRevision ? 'Enviando...' : (orden.revision_estatus ? 'Reenviar a Revisión' : 'Enviar a Revisión')}
+            </button>
+            <PDFDownloadLink
+              document={<ComisionPDF data={orden} autoridades={autoridades} />} 
+              fileName={nombreArchivo} // 🔴 APLICAMOS EL NOMBRE AL BOTÓN VERDE
+              className="flex items-center justify-center gap-2 bg-green-600 text-white px-8 py-3 rounded-lg font-black shadow-lg hover:bg-green-700 transition-all active:scale-95 text-xs uppercase w-full md:w-auto"
+            >
+              {({ loading }) => (
+                <>
+                  <Download size={18} />
+                  {loading ? 'Preparando archivo...' : 'Descargar Orden PDF'}
+                </>
+              )}
+            </PDFDownloadLink>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl h-[70vh] md:h-[85vh] overflow-hidden border border-gray-300 flex flex-col">
           <BlobProvider document={<ComisionPDF data={orden} autoridades={autoridades} />}> 
-            {({ url, loading, error }) => {
+            {({ url, blob, loading, error }) => {
+              if (blob && pdfBlob !== blob) setTimeout(() => setPdfBlob(blob), 0);
               if (loading) {
                 return (
                   <div className="flex-1 flex flex-col items-center justify-center bg-gray-50">
