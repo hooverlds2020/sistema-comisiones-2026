@@ -80,6 +80,18 @@ const DetalleOrden = () => {
   const nombreArchivo = `${numeroFolio} - ${orden.comisionado}.pdf`;
   const documentoPdf = useMemo(() => <ComisionPDF data={orden} autoridades={autoridades} />, [orden, autoridades]);
 
+  useEffect(() => {
+    let cancelado = false;
+    if (documentoPdf) {
+      import('@react-pdf/renderer').then(({ pdf }) => {
+        pdf(documentoPdf).toBlob().then((generatedBlob) => {
+          if (!cancelado) setPdfBlob(generatedBlob);
+        });
+      });
+    }
+    return () => { cancelado = true; };
+  }, [documentoPdf]);
+
   return (
     <div className="p-4 md:p-8 bg-slate-100 min-h-screen">
       <div className="max-w-6xl mx-auto">
@@ -115,7 +127,6 @@ const DetalleOrden = () => {
         <div className="bg-white rounded-2xl shadow-2xl h-[70vh] md:h-[85vh] overflow-hidden border border-gray-300 flex flex-col">
           <BlobProvider document={documentoPdf}> 
             {({ url, blob, loading, error }) => {
-              if (blob && pdfBlob !== blob) setTimeout(() => setPdfBlob(blob), 0);
               if (loading) {
                 return (
                   <div className="flex-1 flex flex-col items-center justify-center bg-gray-50">
