@@ -145,6 +145,59 @@ app.patch('/api/ordenes/:id/reasignar', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.patch('/api/ordenes/:id/revision', async (req, res) => {
+  try {
+    const { accion, observaciones, usuario, pdfBase64 } = req.body;
+    const ordActual = await pool.query('SELECT * FROM ordenes WHERE id=$1', [req.params.id]);
+    if (ordActual.rows.length === 0) return res.status(404).json({ error: 'No encontrada' });
+    const ord = ordActual.rows[0];
+    const f = `${String(ord.numero_folio).padStart(3, '0')}/CESMECA/${ord.anio_folio}`;
+    const linkOrden = `https://orden-comision.clickwebhoover.online/editar/${ord.id}`;
+    const attachments = pdfBase64 ? [{ filename: `Orden_${f.replace(/\//g, '-')}.pdf`, content: pdfBase64, encoding: 'base64' }] : [];
+
+    if (accion === 'enviar_revision') {
+      await pool.query('UPDATE ordenes SET revision_estatus=$1, observaciones_revision=NULL WHERE id=$2', ['Pendiente', ord.id]);
+      const revisora = await pool.query("SELECT email FROM usuarios WHERE rol = 'Administradora' AND email IS NOT NULL LIMIT 1");
+      if (revisora.rows[0]?.email) {
+        await enviarCorreo({
+          to: revisora.rows[0].email,
+          subject: `Orden ${f} lista para revisión`,
+          html: `<p>La orden de comisión <b>${f}</b> de <b>${ord.comisionado}</b> está lista para tu revisión.</p><p>Puedes revisarla y aprobarla aquí: <a href="${linkOrden}">${linkOrden}</a></p>`,
+          attachments,
+        });
+      }
+      registrarBitacora(usuario, 'REVISION', f, 'Enviada a revisión');
+    } else if (accion === 'observar') {
+      await pool.query('UPDATE ordenes SET revision_estatus=$1, observaciones_revision=$2 WHERE id=$3', ['Con Observaciones', observaciones || '', ord.id]);
+      const creador = await pool.query('SELECT email FROM usuarios WHERE nombre = $1 AND email IS NOT NULL LIMIT 1', [ord.usuario_modificador]);
+      if (creador.rows[0]?.email) {
+        await enviarCorreo({
+          to: creador.rows[0].email,
+          subject: `Orden ${f} tiene observaciones`,
+          html: `<p>La orden de comisión <b>${f}</b> de <b>${ord.comisionado}</b> tiene observaciones:</p><blockquote>${observaciones || ''}</blockquote><p>Revísala aquí: <a href="${linkOrden}">${linkOrden}</a></p>`,
+        });
+      }
+      registrarBitacora(usuario, 'REVISION', f, `Con observaciones: ${observaciones || ''}`);
+    } else if (accion === 'aprobar') {
+      await pool.query('UPDATE ordenes SET revision_estatus=$1, observaciones_revision=NULL WHERE id=$2', ['Aprobada', ord.id]);
+      if (ord.comisionado_email) {
+        await enviarCorreo({
+          to: ord.comisionado_email,
+          subject: `Orden de comisión ${f} aprobada`,
+          html: `<p>Tu orden de comisión <b>${f}</b> ha sido aprobada. Se adjunta el documento final.</p>`,
+          attachments,
+        });
+      }
+      registrarBitacora(usuario, 'REVISION', f, 'Aprobada');
+    } else {
+      return res.status(400).json({ error: 'Accion no reconocida' });
+    }
+
+    const actualizada = await pool.query('SELECT * FROM ordenes WHERE id=$1', [ord.id]);
+    res.json(actualizada.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.patch('/api/ordenes/:id/estatus', async (req, res) => {
   try {
     const { estatus, usuario } = req.body;
