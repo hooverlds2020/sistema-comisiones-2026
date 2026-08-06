@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PDFDownloadLink, BlobProvider } from '@react-pdf/renderer';
 import { ArrowLeft, Download, FileText, Eye, Send } from 'lucide-react';
@@ -78,6 +78,7 @@ const DetalleOrden = () => {
   // 🔴 AQUÍ ESTÁ LA MAGIA: Construimos el nombre perfecto del archivo
   const numeroFolio = String(orden.numero_folio || '000').padStart(3, '0');
   const nombreArchivo = `${numeroFolio} - ${orden.comisionado}.pdf`;
+  const documentoPdf = useMemo(() => <ComisionPDF data={orden} autoridades={autoridades} />, [orden, autoridades]);
 
   return (
     <div className="p-4 md:p-8 bg-slate-100 min-h-screen">
@@ -97,7 +98,7 @@ const DetalleOrden = () => {
               {enviandoRevision ? 'Enviando...' : (orden.revision_estatus ? 'Reenviar a Revisión' : 'Enviar a Revisión')}
             </button>
             <PDFDownloadLink
-              document={<ComisionPDF data={orden} autoridades={autoridades} />} 
+              document={documentoPdf} 
               fileName={nombreArchivo} // 🔴 APLICAMOS EL NOMBRE AL BOTÓN VERDE
               className="flex items-center justify-center gap-2 bg-green-600 text-white px-8 py-3 rounded-lg font-black shadow-lg hover:bg-green-700 transition-all active:scale-95 text-xs uppercase w-full md:w-auto"
             >
@@ -112,7 +113,7 @@ const DetalleOrden = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl h-[70vh] md:h-[85vh] overflow-hidden border border-gray-300 flex flex-col">
-          <BlobProvider document={<ComisionPDF data={orden} autoridades={autoridades} />}> 
+          <BlobProvider document={documentoPdf}> 
             {({ url, blob, loading, error }) => {
               if (blob && pdfBlob !== blob) setTimeout(() => setPdfBlob(blob), 0);
               if (loading) {
