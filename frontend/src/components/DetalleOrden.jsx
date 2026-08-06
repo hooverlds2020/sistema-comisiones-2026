@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PDFDownloadLink, BlobProvider } from '@react-pdf/renderer';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { ArrowLeft, Download, FileText, Eye, Send } from 'lucide-react';
 import ComisionPDF from './ComisionPDF';
 
@@ -11,6 +11,7 @@ const DetalleOrden = () => {
   const [autoridades, setAutoridades] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [pdfBlob, setPdfBlob] = useState(null);
+  const [pdfErrorPreview, setPdfErrorPreview] = useState(false);
   const [enviandoRevision, setEnviandoRevision] = useState(false);
 
   const blobToBase64 = (blob) => new Promise((resolve, reject) => {
@@ -82,15 +83,22 @@ const DetalleOrden = () => {
 
   useEffect(() => {
     let cancelado = false;
+    setPdfBlob(null);
+    setPdfErrorPreview(false);
     if (documentoPdf) {
       import('@react-pdf/renderer').then(({ pdf }) => {
         pdf(documentoPdf).toBlob().then((generatedBlob) => {
           if (!cancelado) setPdfBlob(generatedBlob);
-        });
+        }).catch(() => { if (!cancelado) setPdfErrorPreview(true); });
       });
     }
     return () => { cancelado = true; };
   }, [documentoPdf]);
+
+  const pdfUrl = useMemo(() => (pdfBlob ? URL.createObjectURL(pdfBlob) : null), [pdfBlob]);
+  useEffect(() => {
+    return () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); };
+  }, [pdfUrl]);
 
   return (
     <div className="p-4 md:p-8 bg-slate-100 min-h-screen">
@@ -125,41 +133,34 @@ const DetalleOrden = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl h-[70vh] md:h-[85vh] overflow-hidden border border-gray-300 flex flex-col">
-          <BlobProvider document={documentoPdf}> 
-            {({ url, blob, loading, error }) => {
-              if (loading) {
-                return (
-                  <div className="flex-1 flex flex-col items-center justify-center bg-gray-50">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
-                    <p className="font-bold text-gray-500 text-xs uppercase tracking-widest">Generando Documento...</p>
-                  </div>
-                );
-              }
-              if (error) {
-                return <div className="flex-1 flex items-center justify-center text-red-600 font-bold">Ocurrió un error al generar el PDF.</div>;
-              }
-              
-              return (
-                <object data={url} type="application/pdf" className="w-full h-full">
-                  <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-6 text-center">
-                    <FileText size={64} className="text-gray-300 mb-4" />
-                    <h3 className="text-lg md:text-xl font-black text-blue-900 mb-2">Vista previa no disponible</h3>
-                    <p className="text-gray-500 text-sm mb-8 max-w-md">
-                      Tu dispositivo no soporta la lectura de PDFs dentro de esta pantalla. Elige una opción:
-                    </p>
-                    <div className="flex flex-col gap-3 w-full max-w-xs">
-                      <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-blue-700 transition-all active:scale-95">
-                        <Eye size={20} /> Ver Documento
-                      </a>
-                      <a href={url} download={nombreArchivo} className="flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-bold shadow-sm hover:bg-gray-300 transition-all active:scale-95"> {/* 🔴 APLICAMOS EL NOMBRE AL BOTÓN DE RESPALDO */}
-                        <Download size={20} /> Guardar PDF
-                      </a>
-                    </div>
-                  </div>
-                </object>
-              );
-            }}
-          </BlobProvider>
+          {!pdfUrl && !pdfErrorPreview && (
+            <div className="flex-1 flex flex-col items-center justify-center bg-gray-50">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+              <p className="font-bold text-gray-500 text-xs uppercase tracking-widest">Generando Documento...</p>
+            </div>
+          )}
+          {pdfErrorPreview && (
+            <div className="flex-1 flex items-center justify-center text-red-600 font-bold">Ocurrió un error al generar el PDF.</div>
+          )}
+          {pdfUrl && !pdfErrorPreview && (
+            <object data={pdfUrl} type="application/pdf" className="w-full h-full">
+              <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-6 text-center">
+                <FileText size={64} className="text-gray-300 mb-4" />
+                <h3 className="text-lg md:text-xl font-black text-blue-900 mb-2">Vista previa no disponible</h3>
+                <p className="text-gray-500 text-sm mb-8 max-w-md">
+                  Tu dispositivo no soporta la lectura de PDFs dentro de esta pantalla. Elige una opción:
+                </p>
+                <div className="flex flex-col gap-3 w-full max-w-xs">
+                  <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-blue-700 transition-all active:scale-95">
+                    <Eye size={20} /> Ver Documento
+                  </a>
+                  <a href={pdfUrl} download={nombreArchivo} className="flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-bold shadow-sm hover:bg-gray-300 transition-all active:scale-95">
+                    <Download size={20} /> Guardar PDF
+                  </a>
+                </div>
+              </div>
+            </object>
+          )}
         </div>
       </div>
     </div>
