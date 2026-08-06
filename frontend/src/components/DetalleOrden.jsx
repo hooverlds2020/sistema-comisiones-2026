@@ -203,7 +203,7 @@ const DetalleOrden = () => {
               <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{orden.observaciones_revision}</p>
             )}
 
-            {esRevisora && orden.revision_estatus === 'Pendiente' && (
+            {esRevisora && (orden.revision_estatus === 'Pendiente' || orden.revision_estatus === 'Con Observaciones') && (
               <div className="flex flex-col sm:flex-row gap-2 mt-3">
                 <button
                   onClick={aprobarOrden}
