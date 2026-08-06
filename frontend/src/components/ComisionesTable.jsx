@@ -310,9 +310,20 @@ const ComisionesTable = () => {
                                 <td className="px-3 py-4 md:px-5 text-gray-600 text-xs md:text-sm font-medium text-left">{orden.lugar}</td>
                                 <td className="px-3 py-4 md:px-5 text-xs md:text-sm font-bold text-emerald-700 text-right whitespace-nowrap">{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(orden.importe_total || 0)}</td>
                                 <td className="px-3 py-4 md:px-5 text-center whitespace-nowrap">
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase border ${orden.estatus === 'Concluido' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                                        {orden.estatus === 'Concluido' ? 'Concluido' : 'En Proceso'}
-                                    </span>
+                                    <div className="flex flex-col items-center gap-1">
+                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase border ${orden.estatus === 'Concluido' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                            {orden.estatus === 'Concluido' ? 'Concluido' : 'En Proceso'}
+                                        </span>
+                                        {orden.revision_estatus && (
+                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase border ${
+                                                orden.revision_estatus === 'Aprobada' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                orden.revision_estatus === 'Con Observaciones' ? 'bg-red-50 text-red-700 border-red-200' :
+                                                'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                            }`}>
+                                                {orden.revision_estatus}
+                                            </span>
+                                        )}
+                                    </div>
                                 </td>
                                 <td className="px-3 py-4 md:px-5">
                                 <div className="flex justify-center items-center gap-2">
