@@ -48,7 +48,7 @@ const CrearComision = () => {
     }
     return {
       fecha_elaboracion: new Date().toISOString().split('T')[0],
-      tipo_comision: 'Nacional',
+      tipo_comision: 'Nacional', moneda: 'MXN',
       comisionado: '', rfc: '', categoria: '', adscripcion: '',
       lugar: '', motivo: '',
       fecha_inicio: '', fecha_fin: '', hora_salida: '', hora_regreso: '',
@@ -239,6 +239,16 @@ const CrearComision = () => {
                     <div className="w-full">
                         <label className="block text-xs font-bold text-indigo-800 mb-1">TIPO DE COMISIÓN</label>
                         <select name="tipo_comision" value={formData.tipo_comision} onChange={handleChange} className="w-full p-2 border rounded font-bold text-indigo-900 bg-white"><option value="Nacional">NACIONAL / ESTATAL</option><option value="Internacional">INTERNACIONAL</option></select>
+                        {String(formData.tipo_comision).toUpperCase().includes("INTERNACIONAL") && (
+                            <div className="mt-2">
+                                <label className="block text-xs font-bold text-indigo-800 mb-1">MONEDA</label>
+                                <select name="moneda" value={formData.moneda} onChange={handleChange} className="w-full p-2 border rounded font-bold text-indigo-900 bg-white">
+                                    <option value="MXN">PESOS MEXICANOS (MXN)</option>
+                                    <option value="USD">DÓLARES AMERICANOS (USD)</option>
+                                    <option value="EUR">EUROS (EUR)</option>
+                                </select>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="bg-gray-100 p-4 rounded-md border border-gray-200 flex items-center gap-4">
