@@ -51,7 +51,7 @@ const enviarCorreo = async ({ to, subject, html, attachments }) => {
     console.log(`Correo enviado a ${to}: ${subject}`);
     return true;
   } catch (err) {
-    console.error('Error al enviar correo:', err.message);
+    console.error('Error al enviar correo:', err.message, '| code:', err.code, '| response:', err.response);
     return false;
   }
 };
