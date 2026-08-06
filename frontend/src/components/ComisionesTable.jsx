@@ -18,6 +18,8 @@ const ComisionesTable = () => {
   const usuarioActivo = JSON.parse(localStorage.getItem('usuarioActivo') || '{}');
   const nombreUsuario = usuarioActivo.nombre || 'Desconocido';
   const esAdministrador = nombreUsuario.includes('Roberto') || nombreUsuario.includes('Hoover') || usuarioActivo.rol === 'admin';
+  const esRevisora = usuarioActivo.rol === 'Administradora';
+  const puedeVerTodo = esAdministrador || esRevisora;
 
   useEffect(() => {
     fetch('/api/ordenes')
@@ -40,7 +42,7 @@ const ComisionesTable = () => {
   const siguienteFolioString = String(maxFolio + 1).padStart(3, '0');
 
   const ordenesFiltradas = ordenes.filter(o => {
-      if (!esAdministrador) {
+      if (!puedeVerTodo) {
           const creadorLimpio = (o.usuario_modificador || '').toLowerCase().trim();
           const userLimpio = nombreUsuario.toLowerCase().trim();
           const esCreador = creadorLimpio === userLimpio || (creadorLimpio.length > 3 && userLimpio.includes(creadorLimpio));
