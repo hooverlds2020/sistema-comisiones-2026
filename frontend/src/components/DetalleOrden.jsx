@@ -13,6 +13,11 @@ const DetalleOrden = () => {
   const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfErrorPreview, setPdfErrorPreview] = useState(false);
   const [enviandoRevision, setEnviandoRevision] = useState(false);
+  const [mostrarObservar, setMostrarObservar] = useState(false);
+  const [textoObservacion, setTextoObservacion] = useState('');
+  const [procesandoRevision, setProcesandoRevision] = useState(false);
+  const usuarioActivo = JSON.parse(localStorage.getItem('usuarioActivo') || '{}');
+  const esRevisora = usuarioActivo.rol === 'Administradora';
 
   const blobToBase64 = (blob) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -25,7 +30,6 @@ const DetalleOrden = () => {
     if (!pdfBlob) return;
     setEnviandoRevision(true);
     try {
-      const usuarioActivo = JSON.parse(localStorage.getItem('usuarioActivo') || '{}');
       const pdfBase64 = await blobToBase64(pdfBlob);
       const res = await fetch(`/api/ordenes/${orden.id}/revision`, {
         method: 'PATCH',
@@ -44,6 +48,55 @@ const DetalleOrden = () => {
       alert('Error al enviar a revisión.');
     } finally {
       setEnviandoRevision(false);
+    }
+  };
+
+  const aprobarOrden = async () => {
+    if (!pdfBlob) return;
+    setProcesandoRevision(true);
+    try {
+      const pdfBase64 = await blobToBase64(pdfBlob);
+      const res = await fetch(`/api/ordenes/${orden.id}/revision`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'aprobar', usuario: usuarioActivo.nombre || 'Sistema', pdfBase64 }),
+      });
+      if (res.ok) {
+        setOrden(await res.json());
+        alert('Orden aprobada correctamente.');
+      } else {
+        alert('No se pudo aprobar. Intenta de nuevo.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error al aprobar.');
+    } finally {
+      setProcesandoRevision(false);
+    }
+  };
+
+  const enviarObservacion = async () => {
+    if (!textoObservacion.trim()) { alert('Escribe una observación.'); return; }
+    setProcesandoRevision(true);
+    try {
+      const res = await fetch(`/api/ordenes/${orden.id}/revision`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'observar', observaciones: textoObservacion, usuario: usuarioActivo.nombre || 'Sistema' }),
+      });
+      if (res.ok) {
+        setOrden(await res.json());
+        setMostrarObservar(false);
+        setTextoObservacion('');
+        alert('Observación enviada correctamente.');
+      } else {
+        alert('No se pudo enviar la observación. Intenta de nuevo.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error al enviar observación.');
+    } finally {
+      setProcesandoRevision(false);
     }
   };
 
@@ -148,6 +201,45 @@ const DetalleOrden = () => {
             </p>
             {orden.revision_estatus === 'Con Observaciones' && orden.observaciones_revision && (
               <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{orden.observaciones_revision}</p>
+            )}
+
+            {esRevisora && orden.revision_estatus === 'Pendiente' && (
+              <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                <button
+                  onClick={aprobarOrden}
+                  disabled={!pdfBlob || procesandoRevision}
+                  className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-5 py-2 rounded-lg font-bold text-xs uppercase hover:bg-emerald-700 transition-all disabled:opacity-50"
+                >
+                  {procesandoRevision ? 'Procesando...' : 'Aprobar'}
+                </button>
+                <button
+                  onClick={() => setMostrarObservar(true)}
+                  disabled={procesandoRevision}
+                  className="flex items-center justify-center gap-2 bg-red-600 text-white px-5 py-2 rounded-lg font-bold text-xs uppercase hover:bg-red-700 transition-all disabled:opacity-50"
+                >
+                  Regresar con Observaciones
+                </button>
+              </div>
+            )}
+
+            {mostrarObservar && (
+              <div className="mt-3 bg-white rounded-lg p-3 border border-red-200">
+                <textarea
+                  value={textoObservacion}
+                  onChange={(e) => setTextoObservacion(e.target.value)}
+                  placeholder="Escribe la observación para quien capturó la orden..."
+                  className="w-full p-2 border rounded text-sm"
+                  rows={3}
+                />
+                <div className="flex gap-2 mt-2">
+                  <button onClick={enviarObservacion} disabled={procesandoRevision} className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase hover:bg-red-700 disabled:opacity-50">
+                    {procesandoRevision ? 'Enviando...' : 'Enviar Observación'}
+                  </button>
+                  <button onClick={() => { setMostrarObservar(false); setTextoObservacion(''); }} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold text-xs uppercase hover:bg-gray-300">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
