@@ -42,12 +42,14 @@ const transporterEmail = nodemailer.createTransport({
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
 });
 
-const enviarCorreo = async ({ to, subject, html, attachments }) => {
+const enviarCorreo = async ({ to, subject, html, attachments, replyTo }) => {
   try {
-    await transporterEmail.sendMail({
+    const mailOptions = {
       from: `"Sistema de Comisiones CESMECA" <${process.env.EMAIL_USER}>`,
       to, subject, html, attachments: attachments || [],
-    });
+    };
+    if (replyTo) mailOptions.replyTo = replyTo;
+    await transporterEmail.sendMail(mailOptions);
     console.log(`Correo enviado a ${to}: ${subject}`);
     return true;
   } catch (err) {
@@ -185,11 +187,13 @@ app.patch('/api/ordenes/:id/revision', async (req, res) => {
       if (!ord.comisionado_email) {
         return res.status(400).json({ error: 'La orden no tiene correo del comisionado capturado.' });
       }
+      const creadorReply = await pool.query('SELECT email FROM usuarios WHERE nombre = $1 AND email IS NOT NULL LIMIT 1', [ord.usuario_modificador]);
       const enviado = await enviarCorreo({
         to: ord.comisionado_email,
         subject: `Orden de comisión ${f} aprobada`,
-        html: `<p>Tu orden de comisión <b>${f}</b> ha sido aprobada. Se adjunta el documento final.</p>`,
+        html: `<p>Tu orden de comisión <b>${f}</b> ha sido aprobada. Se adjunta el documento final.</p><p>Si tienes alguna observación sobre este documento, puedes responder directamente a este correo.</p>`,
         attachments,
+        replyTo: creadorReply.rows[0]?.email || undefined,
       });
       if (!enviado) {
         return res.status(500).json({ error: 'No se pudo enviar el correo. Intenta de nuevo.' });
