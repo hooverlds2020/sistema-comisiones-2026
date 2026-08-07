@@ -234,6 +234,25 @@ const ComisionesTable = () => {
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <button onClick={() => setFiltroRevision('Pendiente')} className={`text-left p-4 rounded-xl border-2 transition-all ${filtroRevision === 'Pendiente' ? 'bg-amber-100 border-amber-400' : 'bg-amber-50 border-amber-200 hover:border-amber-300'}`}>
+                <p className="text-2xl font-black text-amber-700">{ordenesDelAnioGlobal.filter(o => o.revision_estatus === 'Pendiente').length}</p>
+                <p className="text-xs font-bold text-amber-800 uppercase tracking-wide">Pendientes</p>
+            </button>
+            <button onClick={() => setFiltroRevision('Con Observaciones')} className={`text-left p-4 rounded-xl border-2 transition-all ${filtroRevision === 'Con Observaciones' ? 'bg-red-100 border-red-400' : 'bg-red-50 border-red-200 hover:border-red-300'}`}>
+                <p className="text-2xl font-black text-red-700">{ordenesDelAnioGlobal.filter(o => o.revision_estatus === 'Con Observaciones').length}</p>
+                <p className="text-xs font-bold text-red-800 uppercase tracking-wide">Con Observaciones</p>
+            </button>
+            <button onClick={() => setFiltroRevision('Aprobada')} className={`text-left p-4 rounded-xl border-2 transition-all ${filtroRevision === 'Aprobada' ? 'bg-emerald-100 border-emerald-400' : 'bg-emerald-50 border-emerald-200 hover:border-emerald-300'}`}>
+                <p className="text-2xl font-black text-emerald-700">{ordenesDelAnioGlobal.filter(o => o.revision_estatus === 'Aprobada').length}</p>
+                <p className="text-xs font-bold text-emerald-800 uppercase tracking-wide">Aprobadas</p>
+            </button>
+            <button onClick={() => setFiltroRevision('Todas')} className={`text-left p-4 rounded-xl border-2 transition-all ${filtroRevision === 'Todas' ? 'bg-blue-100 border-blue-400' : 'bg-blue-50 border-blue-200 hover:border-blue-300'}`}>
+                <p className="text-2xl font-black text-blue-700">{ordenesDelAnioGlobal.length}</p>
+                <p className="text-xs font-bold text-blue-800 uppercase tracking-wide">Total del Año</p>
+            </button>
+        </div>
+
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-white p-6 rounded-xl shadow-sm border border-blue-100">
           <div className="text-center md:text-left">
             <h1 className="text-xl md:text-2xl font-black text-blue-900 tracking-tight">Gestión de Oficios</h1>
