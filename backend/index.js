@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -85,13 +86,31 @@ const registrarBitacora = async (usuario, accion, folio, detalles) => {
 // --- USUARIOS ---
 app.post('/api/login', async (req, res) => {
   try {
-    const result = await pool.query('SELECT username, nombre, rol FROM usuarios WHERE username = $1 AND password = $2 AND activo = true', [req.body.username.toLowerCase(), req.body.password]);
-    if (result.rows.length > 0) {
-      const usuario = result.rows[0];
-      enviarAlertaTelegram(`🛡️ *Acceso al Sistema*\n👤 *Usuario:* ${usuario.nombre}\n🕒 *Fecha:* ${new Date().toLocaleString('es-MX')}`);
-      registrarBitacora(usuario.username, 'LOGIN', null, 'Inicio de sesión');
-      res.json({ message: 'Login exitoso', user: usuario });
-    } else res.status(401).json({ message: 'Inválidas' });
+    const usernameLower = req.body.username.toLowerCase();
+    const passwordIntentada = req.body.password;
+    const result = await pool.query('SELECT id, username, nombre, rol, password FROM usuarios WHERE username = $1 AND activo = true', [usernameLower]);
+    if (result.rows.length === 0) return res.status(401).json({ message: 'Inválidas' });
+
+    const fila = result.rows[0];
+    const esHash = fila.password && fila.password.startsWith('$2');
+    let valido = false;
+
+    if (esHash) {
+      valido = await bcrypt.compare(passwordIntentada, fila.password);
+    } else {
+      valido = fila.password === passwordIntentada;
+      if (valido) {
+        const nuevoHash = await bcrypt.hash(passwordIntentada, 10);
+        await pool.query('UPDATE usuarios SET password=$1 WHERE id=$2', [nuevoHash, fila.id]);
+      }
+    }
+
+    if (!valido) return res.status(401).json({ message: 'Inválidas' });
+
+    const usuario = { username: fila.username, nombre: fila.nombre, rol: fila.rol };
+    enviarAlertaTelegram(`🛡️ *Acceso al Sistema*\n👤 *Usuario:* ${usuario.nombre}\n🕒 *Fecha:* ${new Date().toLocaleString('es-MX')}`);
+    registrarBitacora(usuario.username, 'LOGIN', null, 'Inicio de sesión');
+    res.json({ message: 'Login exitoso', user: usuario });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.get('/api/usuarios', async (req, res) => {
@@ -99,14 +118,17 @@ app.get('/api/usuarios', async (req, res) => {
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/usuarios', async (req, res) => {
-  try { res.json((await pool.query('INSERT INTO usuarios (username, password, nombre, rol) VALUES ($1, $2, $3, $4) RETURNING id, username, nombre, rol', [req.body.username.toLowerCase(), req.body.password, req.body.nombre, req.body.rol])).rows[0]); } 
-  catch (err) { res.status(500).json({ error: 'Ya existe' }); }
+  try {
+    const hash = await bcrypt.hash(req.body.password, 10);
+    res.json((await pool.query('INSERT INTO usuarios (username, password, nombre, rol) VALUES ($1, $2, $3, $4) RETURNING id, username, nombre, rol', [req.body.username.toLowerCase(), hash, req.body.nombre, req.body.rol])).rows[0]);
+  } catch (err) { res.status(500).json({ error: 'Ya existe' }); }
 });
 app.put('/api/usuarios/:id', async (req, res) => {
   const { id } = req.params; const { nombre, rol, activo, password } = req.body;
   try {
-    const query = password ? 'UPDATE usuarios SET nombre=$1, rol=$2, activo=$3, password=$4 WHERE id=$5 RETURNING *' : 'UPDATE usuarios SET nombre=$1, rol=$2, activo=$3 WHERE id=$4 RETURNING *';
-    res.json((await pool.query(query, password ? [nombre, rol, activo, password, id] : [nombre, rol, activo, id])).rows[0]);
+    const passwordHash = password ? await bcrypt.hash(password, 10) : null;
+    const query = passwordHash ? 'UPDATE usuarios SET nombre=$1, rol=$2, activo=$3, password=$4 WHERE id=$5 RETURNING *' : 'UPDATE usuarios SET nombre=$1, rol=$2, activo=$3 WHERE id=$4 RETURNING *';
+    res.json((await pool.query(query, passwordHash ? [nombre, rol, activo, passwordHash, id] : [nombre, rol, activo, id])).rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
