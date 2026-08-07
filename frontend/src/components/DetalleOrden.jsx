@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { ArrowLeft, Download, FileText, Eye, Send } from 'lucide-react';
 import ComisionPDF from './ComisionPDF';
+import Swal from 'sweetalert2';
 
 const DetalleOrden = () => {
   const { id } = useParams();
@@ -39,13 +40,13 @@ const DetalleOrden = () => {
       if (res.ok) {
         const actualizada = await res.json();
         setOrden(actualizada);
-        alert('Orden enviada a revisión correctamente.');
+        Swal.fire({ icon: 'success', title: 'Enviada a revisión', text: 'La orden se envió correctamente para su revisión.', confirmButtonColor: '#4f46e5' });
       } else {
-        alert('No se pudo enviar a revisión. Intenta de nuevo.');
+        Swal.fire({ icon: 'error', title: 'No se pudo enviar', text: 'Ocurrió un problema al enviar a revisión. Intenta de nuevo.', confirmButtonColor: '#dc2626' });
       }
     } catch (err) {
       console.error(err);
-      alert('Error al enviar a revisión.');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al enviar a revisión.', confirmButtonColor: '#dc2626' });
     } finally {
       setEnviandoRevision(false);
     }
@@ -63,20 +64,20 @@ const DetalleOrden = () => {
       });
       if (res.ok) {
         setOrden(await res.json());
-        alert('Orden aprobada correctamente.');
+        Swal.fire({ icon: 'success', title: 'Orden aprobada', text: 'La orden fue aprobada correctamente.', confirmButtonColor: '#059669' });
       } else {
-        alert('No se pudo aprobar. Intenta de nuevo.');
+        Swal.fire({ icon: 'error', title: 'No se pudo aprobar', text: 'Ocurrió un problema al aprobar la orden. Intenta de nuevo.', confirmButtonColor: '#dc2626' });
       }
     } catch (err) {
       console.error(err);
-      alert('Error al aprobar.');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al aprobar la orden.', confirmButtonColor: '#dc2626' });
     } finally {
       setProcesandoRevision(false);
     }
   };
 
   const enviarObservacion = async () => {
-    if (!textoObservacion.trim()) { alert('Escribe una observación.'); return; }
+    if (!textoObservacion.trim()) { Swal.fire({ icon: 'warning', title: 'Falta la observación', text: 'Escribe una observación antes de continuar.', confirmButtonColor: '#d97706' }); return; }
     setProcesandoRevision(true);
     try {
       const res = await fetch(`/api/ordenes/${orden.id}/revision`, {
@@ -88,13 +89,13 @@ const DetalleOrden = () => {
         setOrden(await res.json());
         setMostrarObservar(false);
         setTextoObservacion('');
-        alert('Observación enviada correctamente.');
+        Swal.fire({ icon: 'success', title: 'Observación enviada', text: 'La observación se envió correctamente.', confirmButtonColor: '#dc2626' });
       } else {
-        alert('No se pudo enviar la observación. Intenta de nuevo.');
+        Swal.fire({ icon: 'error', title: 'No se pudo enviar', text: 'Ocurrió un problema al enviar la observación. Intenta de nuevo.', confirmButtonColor: '#dc2626' });
       }
     } catch (err) {
       console.error(err);
-      alert('Error al enviar observación.');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al enviar la observación.', confirmButtonColor: '#dc2626' });
     } finally {
       setProcesandoRevision(false);
     }
