@@ -49,7 +49,7 @@ const CrearComision = () => {
     return {
       fecha_elaboracion: new Date().toISOString().split('T')[0],
       tipo_comision: 'Nacional', moneda: 'MXN',
-      comisionado: '', rfc: '', categoria: '', adscripcion: '',
+      comisionado: '', rfc: '', categoria: '', adscripcion: '', comisionado_email: '',
       lugar: '', motivo: '',
       fecha_inicio: '', fecha_fin: '', hora_salida: '', hora_regreso: '',
       es_fechas_multiples: false, periodo_texto: '', dias_salida: '', dias_regreso: '',
@@ -276,7 +276,8 @@ const CrearComision = () => {
                     </div>
                     <div><label className="block text-xs font-bold text-gray-700 mb-1">R.F.C.</label><input name="rfc" value={formData.rfc} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
                     <div><label className="block text-xs font-bold text-gray-700 mb-1">Categoría</label><input name="categoria" value={formData.categoria} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
-                    <div className="md:col-span-4"><label className="block text-xs font-bold text-gray-700 mb-1">Adscripción</label><input name="adscripcion" value={formData.adscripcion} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
+                    <div className="md:col-span-2"><label className="block text-xs font-bold text-gray-700 mb-1">Correo Electrónico del Comisionado</label><input type="email" name="comisionado_email" value={formData.comisionado_email || ''} onChange={handleChange} className="w-full p-2 border rounded bg-white" placeholder="correo@unicach.mx" /></div>
+                    <div className="md:col-span-2"><label className="block text-xs font-bold text-gray-700 mb-1">Adscripción</label><input name="adscripcion" value={formData.adscripcion} onChange={handleChange} className="w-full p-2 border rounded bg-gray-50" /></div>
                 </div>
             </div>
 
