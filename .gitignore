@@ -18,3 +18,9 @@ Thumbs.db
 # Builds de React
 /frontend/build/
 /frontend/dist/
+# Backups locales de la base de datos
+/backups_locales/
+historial_backups.log
+
+# Scripts temporales de edición usados durante desarrollo
+/*.py
