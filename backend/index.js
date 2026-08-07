@@ -183,6 +183,9 @@ app.patch('/api/ordenes/:id/revision', async (req, res) => {
     } else if (accion === 'aprobar') {
       await pool.query('UPDATE ordenes SET revision_estatus=$1, observaciones_revision=NULL WHERE id=$2', ['Aprobada', ord.id]);
       registrarBitacora(usuario, 'REVISION', f, 'Aprobada');
+    } else if (accion === 'marcar_resuelto') {
+      await pool.query('UPDATE ordenes SET revision_estatus=$1, observaciones_revision=NULL WHERE id=$2', ['Pendiente', ord.id]);
+      registrarBitacora(usuario, 'REVISION', f, 'Marcada como resuelta sin reenvio de correo');
     } else if (accion === 'enviar_comisionado') {
       if (!ord.comisionado_email) {
         return res.status(400).json({ error: 'La orden no tiene correo del comisionado capturado.' });
