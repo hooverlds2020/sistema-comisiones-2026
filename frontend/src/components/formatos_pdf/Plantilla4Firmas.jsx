@@ -252,8 +252,8 @@ const Plantilla4Firmas = ({ data, autoridades = [] }) => {
           <View style={{ flex: 1 }} /> 
 
           <View style={{ flexShrink: 0 }}>
-            <FirmaHeader3 left="AUTORIZA" mid="Vo. Bo." right="COMISIONADO" />
-            <FilaTresFirmas izq={RECTORA} mid={SECRETARIO} der={{ nombre: comisionadoNombre, cargo: categoriaComisionado }} altura={firmaH} />
+            <FirmaHeader3 left="COMISIONADO" mid="Vo. Bo." right="AUTORIZA" />
+            <FilaTresFirmas izq={{ nombre: comisionadoNombre, cargo: categoriaComisionado }} mid={SECRETARIO} der={RECTORA} altura={firmaH} />
             <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderTopWidth: 1, borderColor: '#000', backgroundColor: '#f0f0f0', minHeight: 13, alignItems: 'center' }}>
               <View style={{ width: '100%', padding: 2 }}><Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 7 }}>GASTOS A COMPROBAR</Text></View>
             </View>
