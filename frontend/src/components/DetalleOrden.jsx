@@ -53,24 +53,46 @@ const DetalleOrden = () => {
   };
 
   const aprobarOrden = async () => {
-    if (!pdfBlob) return;
     setProcesandoRevision(true);
     try {
-      const pdfBase64 = await blobToBase64(pdfBlob);
       const res = await fetch(`/api/ordenes/${orden.id}/revision`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accion: 'aprobar', usuario: usuarioActivo.nombre || 'Sistema', pdfBase64 }),
+        body: JSON.stringify({ accion: 'aprobar', usuario: usuarioActivo.nombre || 'Sistema' }),
       });
       if (res.ok) {
         setOrden(await res.json());
-        Swal.fire({ icon: 'success', title: 'Orden aprobada', text: 'La orden fue aprobada correctamente.', confirmButtonColor: '#059669' });
+        Swal.fire({ icon: 'success', title: 'Orden aprobada', text: 'La orden fue aprobada correctamente. Cuando estés lista, puedes enviarla al investigador.', confirmButtonColor: '#059669' });
       } else {
         Swal.fire({ icon: 'error', title: 'No se pudo aprobar', text: 'Ocurrió un problema al aprobar la orden. Intenta de nuevo.', confirmButtonColor: '#dc2626' });
       }
     } catch (err) {
       console.error(err);
       Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al aprobar la orden.', confirmButtonColor: '#dc2626' });
+    } finally {
+      setProcesandoRevision(false);
+    }
+  };
+
+  const enviarAlInvestigador = async () => {
+    if (!pdfBlob || !orden.comisionado_email) return;
+    setProcesandoRevision(true);
+    try {
+      const pdfBase64 = await blobToBase64(pdfBlob);
+      const res = await fetch(`/api/ordenes/${orden.id}/revision`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'enviar_investigador', usuario: usuarioActivo.nombre || 'Sistema', pdfBase64 }),
+      });
+      if (res.ok) {
+        Swal.fire({ icon: 'success', title: 'Enviado al investigador', text: `Se envió el documento a ${orden.comisionado_email}.`, confirmButtonColor: '#059669' });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        Swal.fire({ icon: 'error', title: 'No se pudo enviar', text: data.error || 'Ocurrió un problema al enviar el correo. Intenta de nuevo.', confirmButtonColor: '#dc2626' });
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al enviar el correo.', confirmButtonColor: '#dc2626' });
     } finally {
       setProcesandoRevision(false);
     }
@@ -202,6 +224,21 @@ const DetalleOrden = () => {
             </p>
             {orden.revision_estatus === 'Con Observaciones' && orden.observaciones_revision && (
               <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{orden.observaciones_revision}</p>
+            )}
+
+            {orden.revision_estatus === 'Aprobada' && (
+              <div className="mt-3">
+                <button
+                  onClick={enviarAlInvestigador}
+                  disabled={!pdfBlob || !orden.comisionado_email || procesandoRevision}
+                  className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-5 py-2 rounded-lg font-bold text-xs uppercase hover:bg-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {procesandoRevision ? 'Enviando...' : 'Enviar al Investigador'}
+                </button>
+                {!orden.comisionado_email && (
+                  <p className="text-xs text-gray-500 mt-1">Agrega el correo del comisionado en "Editar Orden" para poder enviarlo (opcional).</p>
+                )}
+              </div>
             )}
 
             {esRevisora && (orden.revision_estatus === 'Pendiente' || orden.revision_estatus === 'Con Observaciones') && (
