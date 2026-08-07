@@ -62,7 +62,7 @@ const DetalleOrden = () => {
       });
       if (res.ok) {
         setOrden(await res.json());
-        Swal.fire({ icon: 'success', title: 'Orden aprobada', text: 'La orden fue aprobada correctamente. Cuando estés lista, puedes enviarla al investigador.', confirmButtonColor: '#059669' });
+        Swal.fire({ icon: 'success', title: 'Orden aprobada', text: 'La orden fue aprobada correctamente. Cuando estés lista, puedes enviarla al comisionado.', confirmButtonColor: '#059669' });
       } else {
         Swal.fire({ icon: 'error', title: 'No se pudo aprobar', text: 'Ocurrió un problema al aprobar la orden. Intenta de nuevo.', confirmButtonColor: '#dc2626' });
       }
@@ -74,7 +74,7 @@ const DetalleOrden = () => {
     }
   };
 
-  const enviarAlInvestigador = async () => {
+  const enviarAlComisionado = async () => {
     if (!pdfBlob || !orden.comisionado_email) return;
     setProcesandoRevision(true);
     try {
@@ -82,10 +82,10 @@ const DetalleOrden = () => {
       const res = await fetch(`/api/ordenes/${orden.id}/revision`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accion: 'enviar_investigador', usuario: usuarioActivo.nombre || 'Sistema', pdfBase64 }),
+        body: JSON.stringify({ accion: 'enviar_comisionado', usuario: usuarioActivo.nombre || 'Sistema', pdfBase64 }),
       });
       if (res.ok) {
-        Swal.fire({ icon: 'success', title: 'Enviado al investigador', text: `Se envió el documento a ${orden.comisionado_email}.`, confirmButtonColor: '#059669' });
+        Swal.fire({ icon: 'success', title: 'Enviado al comisionado', text: `Se envió el documento a ${orden.comisionado_email}.`, confirmButtonColor: '#059669' });
       } else {
         const data = await res.json().catch(() => ({}));
         Swal.fire({ icon: 'error', title: 'No se pudo enviar', text: data.error || 'Ocurrió un problema al enviar el correo. Intenta de nuevo.', confirmButtonColor: '#dc2626' });
@@ -229,11 +229,11 @@ const DetalleOrden = () => {
             {orden.revision_estatus === 'Aprobada' && (
               <div className="mt-3">
                 <button
-                  onClick={enviarAlInvestigador}
+                  onClick={enviarAlComisionado}
                   disabled={!pdfBlob || !orden.comisionado_email || procesandoRevision}
                   className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-5 py-2 rounded-lg font-bold text-xs uppercase hover:bg-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {procesandoRevision ? 'Enviando...' : 'Enviar al Investigador'}
+                  {procesandoRevision ? 'Enviando...' : 'Enviar al Comisionado'}
                 </button>
                 {!orden.comisionado_email && (
                   <p className="text-xs text-gray-500 mt-1">Agrega el correo del comisionado en "Editar Orden" para poder enviarlo (opcional).</p>

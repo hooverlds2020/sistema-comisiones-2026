@@ -181,7 +181,7 @@ app.patch('/api/ordenes/:id/revision', async (req, res) => {
     } else if (accion === 'aprobar') {
       await pool.query('UPDATE ordenes SET revision_estatus=$1, observaciones_revision=NULL WHERE id=$2', ['Aprobada', ord.id]);
       registrarBitacora(usuario, 'REVISION', f, 'Aprobada');
-    } else if (accion === 'enviar_investigador') {
+    } else if (accion === 'enviar_comisionado') {
       if (!ord.comisionado_email) {
         return res.status(400).json({ error: 'La orden no tiene correo del comisionado capturado.' });
       }
@@ -194,7 +194,7 @@ app.patch('/api/ordenes/:id/revision', async (req, res) => {
       if (!enviado) {
         return res.status(500).json({ error: 'No se pudo enviar el correo. Intenta de nuevo.' });
       }
-      registrarBitacora(usuario, 'REVISION', f, 'Enviada al investigador por correo');
+      registrarBitacora(usuario, 'REVISION', f, 'Enviada al comisionado por correo');
     } else {
       return res.status(400).json({ error: 'Accion no reconocida' });
     }
