@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, FileText, Search, Trash2, Copy, AlertTriangle, ChevronLeft, ChevronRight, Hash, Shield, CheckCircle, Unlock } from 'lucide-react';
+import { Plus, Edit, FileText, Search, Trash2, Copy, AlertTriangle, ChevronLeft, ChevronRight, Hash, Shield, CheckCircle, Unlock, Filter } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const ComisionesTable = () => {
@@ -281,18 +281,24 @@ const ComisionesTable = () => {
         )}
 
         <div className="bg-white rounded-xl rounded-tl-none shadow-xl border border-gray-200 overflow-hidden relative z-0">
-            <div className="p-4 bg-gray-50 border-b border-gray-100 flex flex-col sm:flex-row justify-between gap-4 items-center">
-                <div className="relative w-full sm:w-1/2">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input type="text" placeholder={esAdministrador ? `Buscar en todo el archivo ${anioActivo}...` : `Buscar en tus oficios de ${anioActivo}...`} className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
-                    <select value={filtroRevision} onChange={(e) => setFiltroRevision(e.target.value)} className="mt-2 w-full sm:w-auto p-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="Todas">Ver todas</option>
-                        <option value="Pendiente">Pendientes</option>
-                        <option value="Con Observaciones">Con Observaciones</option>
-                        <option value="Aprobada">Aprobadas</option>
-                    </select>
+            <div className="p-4 bg-gray-50 border-b border-gray-100 flex flex-col sm:flex-row justify-between gap-3 items-stretch sm:items-center">
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-72">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <input type="text" placeholder={esAdministrador ? `Buscar en todo el archivo ${anioActivo}...` : `Buscar en tus oficios de ${anioActivo}...`} className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+                    </div>
+                    <div className="relative w-full sm:w-56">
+                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <select value={filtroRevision} onChange={(e) => setFiltroRevision(e.target.value)} className="w-full appearance-none pl-10 pr-8 py-2.5 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                            <option value="Todas">Ver todas</option>
+                            <option value="Pendiente">Pendientes</option>
+                            <option value="Con Observaciones">Con Observaciones</option>
+                            <option value="Aprobada">Aprobadas</option>
+                        </select>
+                        <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                    </div>
                 </div>
-                <div className="text-sm font-bold text-gray-500">Total visibles: {ordenesFiltradas.length} comisiones</div>
+                <div className="text-sm font-bold text-gray-500 whitespace-nowrap">Total visibles: {ordenesFiltradas.length} comisiones</div>
             </div>
 
             <div className="overflow-x-auto w-full">
