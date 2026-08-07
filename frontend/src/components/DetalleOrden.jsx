@@ -98,6 +98,28 @@ const DetalleOrden = () => {
     }
   };
 
+  const marcarComoResuelto = async () => {
+    setProcesandoRevision(true);
+    try {
+      const res = await fetch(`/api/ordenes/${orden.id}/revision`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'marcar_resuelto', usuario: usuarioActivo.nombre || 'Sistema' }),
+      });
+      if (res.ok) {
+        setOrden(await res.json());
+        Swal.fire({ icon: 'success', title: 'Marcada como resuelta', text: 'La orden vuelve a estar pendiente de revisión, sin reenviar correo.', confirmButtonColor: '#4b5563' });
+      } else {
+        Swal.fire({ icon: 'error', title: 'No se pudo actualizar', text: 'Ocurrió un problema. Intenta de nuevo.', confirmButtonColor: '#dc2626' });
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al actualizar el estado.', confirmButtonColor: '#dc2626' });
+    } finally {
+      setProcesandoRevision(false);
+    }
+  };
+
   const enviarObservacion = async () => {
     if (!textoObservacion.trim()) { Swal.fire({ icon: 'warning', title: 'Falta la observación', text: 'Escribe una observación antes de continuar.', confirmButtonColor: '#d97706' }); return; }
     setProcesandoRevision(true);
@@ -224,6 +246,16 @@ const DetalleOrden = () => {
             </p>
             {orden.revision_estatus === 'Con Observaciones' && orden.observaciones_revision && (
               <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{orden.observaciones_revision}</p>
+            )}
+
+            {orden.revision_estatus === 'Con Observaciones' && (
+              <button
+                onClick={marcarComoResuelto}
+                disabled={procesandoRevision}
+                className="mt-3 flex items-center justify-center gap-2 bg-gray-600 text-white px-5 py-2 rounded-lg font-bold text-xs uppercase hover:bg-gray-700 transition-all disabled:opacity-50"
+              >
+                {procesandoRevision ? 'Procesando...' : 'Marcar como Resuelto (ya se habló en persona)'}
+              </button>
             )}
 
             {orden.revision_estatus === 'Aprobada' && (
