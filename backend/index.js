@@ -169,6 +169,13 @@ app.patch('/api/ordenes/:id/reasignar', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.get('/api/ordenes/:id/historial', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM revisiones_historial WHERE orden_id=$1 ORDER BY fecha ASC', [req.params.id]);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.patch('/api/ordenes/:id/revision', async (req, res) => {
   try {
     const { accion, observaciones, usuario, pdfBase64 } = req.body;
@@ -191,6 +198,7 @@ app.patch('/api/ordenes/:id/revision', async (req, res) => {
         });
       }
       registrarBitacora(usuario, 'REVISION', f, 'Enviada a revisión');
+      await pool.query('INSERT INTO revisiones_historial (orden_id, accion, observaciones, usuario) VALUES ($1,$2,$3,$4)', [ord.id, 'enviar_revision', null, usuario]);
     } else if (accion === 'observar') {
       await pool.query('UPDATE ordenes SET revision_estatus=$1, observaciones_revision=$2 WHERE id=$3', ['Con Observaciones', observaciones || '', ord.id]);
       const creador = await pool.query('SELECT email FROM usuarios WHERE nombre = $1 AND email IS NOT NULL LIMIT 1', [ord.usuario_modificador]);
@@ -202,12 +210,15 @@ app.patch('/api/ordenes/:id/revision', async (req, res) => {
         });
       }
       registrarBitacora(usuario, 'REVISION', f, `Con observaciones: ${observaciones || ''}`);
+      await pool.query('INSERT INTO revisiones_historial (orden_id, accion, observaciones, usuario) VALUES ($1,$2,$3,$4)', [ord.id, 'observar', observaciones || '', usuario]);
     } else if (accion === 'aprobar') {
       await pool.query('UPDATE ordenes SET revision_estatus=$1, observaciones_revision=NULL WHERE id=$2', ['Aprobada', ord.id]);
       registrarBitacora(usuario, 'REVISION', f, 'Aprobada');
+      await pool.query('INSERT INTO revisiones_historial (orden_id, accion, observaciones, usuario) VALUES ($1,$2,$3,$4)', [ord.id, 'aprobar', null, usuario]);
     } else if (accion === 'marcar_resuelto') {
       await pool.query('UPDATE ordenes SET revision_estatus=$1, observaciones_revision=NULL WHERE id=$2', ['Pendiente', ord.id]);
       registrarBitacora(usuario, 'REVISION', f, 'Marcada como resuelta sin reenvio de correo');
+      await pool.query('INSERT INTO revisiones_historial (orden_id, accion, observaciones, usuario) VALUES ($1,$2,$3,$4)', [ord.id, 'marcar_resuelto', null, usuario]);
     } else if (accion === 'enviar_comisionado') {
       if (!ord.comisionado_email) {
         return res.status(400).json({ error: 'La orden no tiene correo del comisionado capturado.' });
@@ -224,6 +235,7 @@ app.patch('/api/ordenes/:id/revision', async (req, res) => {
         return res.status(500).json({ error: 'No se pudo enviar el correo. Intenta de nuevo.' });
       }
       registrarBitacora(usuario, 'REVISION', f, 'Enviada al comisionado por correo');
+      await pool.query('INSERT INTO revisiones_historial (orden_id, accion, observaciones, usuario) VALUES ($1,$2,$3,$4)', [ord.id, 'enviar_comisionado', null, usuario]);
     } else {
       return res.status(400).json({ error: 'Accion no reconocida' });
     }
