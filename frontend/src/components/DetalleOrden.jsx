@@ -11,6 +11,7 @@ const DetalleOrden = () => {
   const [orden, setOrden] = useState(null);
   const [autoridades, setAutoridades] = useState([]); 
   const [loading, setLoading] = useState(true);
+  const [historial, setHistorial] = useState([]);
   const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfErrorPreview, setPdfErrorPreview] = useState(false);
   const [enviandoRevision, setEnviandoRevision] = useState(false);
@@ -148,13 +149,15 @@ const DetalleOrden = () => {
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        const [resOrden, resAutoridades] = await Promise.all([
+        const [resOrden, resAutoridades, resHistorial] = await Promise.all([
             fetch(`/api/ordenes/${id}`),
-            fetch('/api/autoridades')
+            fetch('/api/autoridades'),
+            fetch(`/api/ordenes/${id}/historial`)
         ]);
 
         if (resOrden.ok) setOrden(await resOrden.json());
         if (resAutoridades.ok) setAutoridades(await resAutoridades.json());
+        if (resHistorial.ok) setHistorial(await resHistorial.json());
 
       } catch (error) { 
         console.error("Error al cargar datos:", error); 
@@ -311,6 +314,30 @@ const DetalleOrden = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {historial.length > 0 && (
+          <div className="mb-4 bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-3">Historial de revisión</p>
+            <div className="space-y-2">
+              {historial.map((h) => {
+                const etiquetas = {
+                  enviar_revision: 'Enviada a revisión',
+                  observar: 'Regresada con observaciones',
+                  aprobar: 'Aprobada',
+                  marcar_resuelto: 'Marcada como resuelta',
+                  enviar_comisionado: 'Enviada al comisionado por correo',
+                };
+                const fechaFmt = new Date(h.fecha).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                return (
+                  <div key={h.id} className="text-sm border-l-2 border-gray-200 pl-3 py-1">
+                    <p className="font-bold text-gray-700">{etiquetas[h.accion] || h.accion} <span className="font-normal text-gray-400">— {h.usuario || 'Sistema'} · {fechaFmt}</span></p>
+                    {h.observaciones && <p className="text-gray-600 mt-1 whitespace-pre-wrap">{h.observaciones}</p>}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
