@@ -7,6 +7,7 @@ const ComisionesTable = () => {
   const [ordenes, setOrdenes] = useState([]);
   const [usuariosCatalogo, setUsuariosCatalogo] = useState([]);
   const [busqueda, setBusqueda] = useState("");
+  const [filtroRevision, setFiltroRevision] = useState("Todas");
   const [anioActivo, setAnioActivo] = useState(new Date().getFullYear());
   const navigate = useNavigate();
 
@@ -54,7 +55,8 @@ const ComisionesTable = () => {
       const coincideAnio = (o.anio_folio || 2026) === anioActivo;
       const texto = busqueda.toLowerCase();
       const coincideBusqueda = o.comisionado?.toLowerCase().includes(texto) || o.numero_folio?.toString().includes(texto) || o.id?.toString().includes(texto);
-      return coincideAnio && coincideBusqueda;
+      const coincideRevision = filtroRevision === 'Todas' || o.revision_estatus === filtroRevision;
+      return coincideAnio && coincideBusqueda && coincideRevision;
   });
 
   useEffect(() => {
@@ -73,7 +75,7 @@ const ComisionesTable = () => {
               setTimeout(() => setFilaResaltada(null), 3000);
           } else { sessionStorage.removeItem('ultimoOficioVisto'); }
       }
-  }, [ordenes, anioActivo, busqueda]);
+  }, [ordenes, anioActivo, busqueda, filtroRevision]);
 
   useEffect(() => { if(!sessionStorage.getItem('ultimoOficioVisto')) setPaginaActual(1); }, [busqueda, anioActivo]);
 
@@ -264,6 +266,12 @@ const ComisionesTable = () => {
                 <div className="relative w-full sm:w-1/2">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                     <input type="text" placeholder={esAdministrador ? `Buscar en todo el archivo ${anioActivo}...` : `Buscar en tus oficios de ${anioActivo}...`} className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+                    <select value={filtroRevision} onChange={(e) => setFiltroRevision(e.target.value)} className="mt-2 w-full sm:w-auto p-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="Todas">Ver todas</option>
+                        <option value="Pendiente">Pendientes</option>
+                        <option value="Con Observaciones">Con Observaciones</option>
+                        <option value="Aprobada">Aprobadas</option>
+                    </select>
                 </div>
                 <div className="text-sm font-bold text-gray-500">Total visibles: {ordenesFiltradas.length} comisiones</div>
             </div>
