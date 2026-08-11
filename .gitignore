@@ -24,3 +24,4 @@ historial_backups.log
 
 # Scripts temporales de edición usados durante desarrollo
 /*.py
+backup.log

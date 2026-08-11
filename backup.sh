@@ -20,7 +20,7 @@ docker exec -e PGPASSWORD="$PASSWORD_DB" $CONTENEDOR_DB pg_dump -U $USUARIO_DB $
 
 # --- 2. SUBIDA A GOOGLE DRIVE ---
 echo "Subiendo a Google Drive..."
-rclone copy $RUTA_LOCAL/$NOMBRE_ARCHIVO respaldos:Backups_Ordenes_Comision
+rclone copy $RUTA_LOCAL/$NOMBRE_ARCHIVO gdrive-cesmeca:backups_sistema_comisiones
 
 # --- 3. LIMPIEZA AUTOMÁTICA (Mantenimiento) ---
 echo "Limpiando respaldos locales antiguos (más de 7 días)..."
