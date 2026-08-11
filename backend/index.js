@@ -188,10 +188,10 @@ app.patch('/api/ordenes/:id/revision', async (req, res) => {
 
     if (accion === 'enviar_revision') {
       await pool.query('UPDATE ordenes SET revision_estatus=$1, observaciones_revision=NULL WHERE id=$2', ['Pendiente', ord.id]);
-      const revisora = await pool.query("SELECT email FROM usuarios WHERE rol = 'Administradora' AND email IS NOT NULL LIMIT 1");
-      if (revisora.rows[0]?.email) {
+      const revisoras = await pool.query("SELECT email FROM usuarios WHERE recibe_notificaciones_revision = true AND email IS NOT NULL");
+      for (const r of revisoras.rows) {
         await enviarCorreo({
-          to: revisora.rows[0].email,
+          to: r.email,
           subject: `Orden ${f} lista para revisión`,
           html: `<p>La orden de comisión <b>${f}</b> de <b>${ord.comisionado}</b> está lista para tu revisión.</p><p>Puedes revisarla y aprobarla aquí: <a href="${linkOrden}">${linkOrden}</a></p>`,
           attachments,
