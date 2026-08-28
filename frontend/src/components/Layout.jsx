@@ -58,7 +58,7 @@ const Layout = ({ children, usuario, onLogout }) => {
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center space-x-1 lg:space-x-1.5 flex-1 min-w-0 overflow-x-auto px-1">
+            <div className="hidden xl:flex items-center space-x-1 lg:space-x-1.5 flex-1 min-w-0 overflow-x-auto px-1">
               {baseLinks.map((link) => (
                 <Link
                   key={link.path}
@@ -74,7 +74,7 @@ const Layout = ({ children, usuario, onLogout }) => {
               ))}
             </div>
 
-            <div className="hidden lg:flex items-center gap-2 lg:gap-4 border-l border-blue-700 px-2 lg:px-4 ml-2 flex-shrink-0">
+            <div className="hidden xl:flex items-center gap-2 lg:gap-4 border-l border-blue-700 px-2 lg:px-4 ml-2 flex-shrink-0">
               {esAdmin && (
                 <div className="relative" ref={adminMenuRef}>
                   <button
@@ -124,7 +124,7 @@ const Layout = ({ children, usuario, onLogout }) => {
               </button>
             </div>
 
-            <div className="lg:hidden flex items-center">
+            <div className="xl:hidden flex items-center">
               <button onClick={() => setMenuAbierto(!menuAbierto)} className="p-2 text-blue-200 hover:text-white">
                 {menuAbierto ? <X size={24} /> : <Menu size={24} />}
               </button>
@@ -133,7 +133,7 @@ const Layout = ({ children, usuario, onLogout }) => {
         </div>
 
         {menuAbierto && (
-          <div className="lg:hidden bg-blue-800 border-t border-blue-700 pb-4">
+          <div className="xl:hidden bg-blue-800 border-t border-blue-700 pb-4">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navLinks.map((link) => (
                 <Link
