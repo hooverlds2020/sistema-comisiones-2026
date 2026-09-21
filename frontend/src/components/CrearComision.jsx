@@ -134,6 +134,7 @@ const CrearComision = () => {
     if (seleccion === 'Vehículo') { nuevosDatos.medio_transporte = 'Terrestre'; }
     else if (seleccion === 'Autobús') { nuevosDatos.medio_transporte = 'Terrestre'; nuevosDatos.vehiculo_marca = ''; nuevosDatos.vehiculo_modelo = ''; nuevosDatos.vehiculo_placas = ''; nuevosDatos.vehiculo_anio = ''; }
     else if (seleccion === 'Aéreo') { nuevosDatos.medio_transporte = 'Aéreo'; nuevosDatos.vehiculo_marca = ''; nuevosDatos.vehiculo_modelo = ''; nuevosDatos.vehiculo_placas = ''; nuevosDatos.vehiculo_anio = ''; }
+    else if (seleccion === 'AereoTerrestre') { nuevosDatos.medio_transporte = 'Aéreo y Terrestre'; }
     setFormData(nuevosDatos);
   };
 
@@ -357,12 +358,12 @@ const CrearComision = () => {
 
                 <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
                     <h3 className="text-sm font-bold text-gray-800 uppercase mb-3 flex items-center gap-2">
-                        {uiTransporte === 'Aéreo' ? <Plane size={18}/> : uiTransporte === 'Autobús' ? <Bus size={18}/> : <Car size={18}/>} 3. Transporte
+                        {uiTransporte === 'AereoTerrestre' ? (<span className="flex items-center gap-1"><Plane size={16}/><Car size={16}/></span>) : uiTransporte === 'Aéreo' ? <Plane size={18}/> : uiTransporte === 'Autobús' ? <Bus size={18}/> : <Car size={18}/>} 3. Transporte
                     </h3>
                     <div className="space-y-3">
                          <div>
                             <label className="block text-xs font-bold text-gray-700 mb-1">Medio de Transporte</label>
-                            <select value={uiTransporte} onChange={handleTransporteUIChange} className="w-full p-2 border rounded font-bold text-gray-800 bg-white"><option value="Vehículo">Terrestre - Vehículo Oficial / Particular</option><option value="Autobús">Terrestre - Autobús / Pasaje</option><option value="Aéreo">Aéreo</option></select>
+                            <select value={uiTransporte} onChange={handleTransporteUIChange} className="w-full p-2 border rounded font-bold text-gray-800 bg-white"><option value="Vehículo">Terrestre - Vehículo Oficial / Particular</option><option value="Autobús">Terrestre - Autobús / Pasaje</option><option value="Aéreo">Aéreo</option><option value="AereoTerrestre">Aéreo y Terrestre</option></select>
                         </div>
                         {uiTransporte === 'Vehículo' ? (
                             <div className="space-y-2 animate-fadeIn">

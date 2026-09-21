@@ -114,21 +114,24 @@ app.post('/api/login', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.get('/api/usuarios', async (req, res) => {
-  try { res.json((await pool.query('SELECT id, username, nombre, rol, activo FROM usuarios ORDER BY nombre ASC')).rows); } 
+  try { res.json((await pool.query('SELECT id, username, nombre, rol, activo, email, recibe_notificaciones_revision FROM usuarios ORDER BY nombre ASC')).rows); } 
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/usuarios', async (req, res) => {
   try {
     const hash = await bcrypt.hash(req.body.password, 10);
-    res.json((await pool.query('INSERT INTO usuarios (username, password, nombre, rol) VALUES ($1, $2, $3, $4) RETURNING id, username, nombre, rol', [req.body.username.toLowerCase(), hash, req.body.nombre, req.body.rol])).rows[0]);
+    const { email, recibe_notificaciones_revision } = req.body;
+    res.json((await pool.query('INSERT INTO usuarios (username, password, nombre, rol, email, recibe_notificaciones_revision) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, nombre, rol, email, recibe_notificaciones_revision', [req.body.username.toLowerCase(), hash, req.body.nombre, req.body.rol, email || null, !!recibe_notificaciones_revision])).rows[0]);
   } catch (err) { res.status(500).json({ error: 'Ya existe' }); }
 });
 app.put('/api/usuarios/:id', async (req, res) => {
-  const { id } = req.params; const { nombre, rol, activo, password } = req.body;
+  const { id } = req.params; const { nombre, rol, activo, password, email, recibe_notificaciones_revision } = req.body;
   try {
     const passwordHash = password ? await bcrypt.hash(password, 10) : null;
-    const query = passwordHash ? 'UPDATE usuarios SET nombre=$1, rol=$2, activo=$3, password=$4 WHERE id=$5 RETURNING *' : 'UPDATE usuarios SET nombre=$1, rol=$2, activo=$3 WHERE id=$4 RETURNING *';
-    res.json((await pool.query(query, passwordHash ? [nombre, rol, activo, passwordHash, id] : [nombre, rol, activo, id])).rows[0]);
+    const emailVal = email || null;
+    const notifVal = !!recibe_notificaciones_revision;
+    const query = passwordHash ? 'UPDATE usuarios SET nombre=$1, rol=$2, activo=$3, password=$4, email=$5, recibe_notificaciones_revision=$6 WHERE id=$7 RETURNING *' : 'UPDATE usuarios SET nombre=$1, rol=$2, activo=$3, email=$4, recibe_notificaciones_revision=$5 WHERE id=$6 RETURNING *';
+    res.json((await pool.query(query, passwordHash ? [nombre, rol, activo, passwordHash, emailVal, notifVal, id] : [nombre, rol, activo, emailVal, notifVal, id])).rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -183,7 +186,7 @@ app.patch('/api/ordenes/:id/revision', async (req, res) => {
     if (ordActual.rows.length === 0) return res.status(404).json({ error: 'No encontrada' });
     const ord = ordActual.rows[0];
     const f = `${String(ord.numero_folio).padStart(3, '0')}/CESMECA/${ord.anio_folio}`;
-    const linkOrden = `https://orden-comision.clickwebhoover.online/editar/${ord.id}`;
+    const linkOrden = `https://orden-comision.clicknube.site/editar/${ord.id}`;
     const attachments = pdfBase64 ? [{ filename: `Orden_${f.replace(/\//g, '-')}.pdf`, content: pdfBase64, encoding: 'base64' }] : [];
 
     if (accion === 'enviar_revision') {

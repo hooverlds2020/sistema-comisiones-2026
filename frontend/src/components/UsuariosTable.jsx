@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Search, X, Save, ShieldCheck, Lock, UserCircle } from 'lucide-react';
+import { Plus, Edit, Search, X, Save, ShieldCheck, Lock, UserCircle, Mail, Bell } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const UsuariosTable = () => {
   const [usuarios, setUsuarios] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [mostrarModal, setMostrarModal] = useState(false);
-  const [form, setForm] = useState({ id: null, username: '', password: '', nombre: '', rol: 'Auxiliar', activo: true });
+  const [form, setForm] = useState({ id: null, username: '', password: '', nombre: '', rol: 'Auxiliar', activo: true, email: '', recibe_notificaciones_revision: false });
 
   const cargarUsuarios = () => {
     fetch('/api/usuarios')
@@ -53,7 +53,7 @@ const UsuariosTable = () => {
     if (u) {
       setForm({ ...u, password: '' }); 
     } else {
-      setForm({ id: null, username: '', password: '', nombre: '', rol: 'Auxiliar', activo: true });
+      setForm({ id: null, username: '', password: '', nombre: '', rol: 'Auxiliar', activo: true, email: '', recibe_notificaciones_revision: false });
     }
     setMostrarModal(true);
   };
@@ -158,13 +158,21 @@ const UsuariosTable = () => {
                 </div>
               </div>
               <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Mail size={12}/> Email</label>
+                <input type="email" placeholder="correo@unicach.mx" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={form.email || ''} onChange={e => setForm({...form, email: e.target.value})} />
+              </div>
+              <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1"><Lock size={12}/> {form.id ? 'Cambiar Contraseña (opcional)' : 'Contraseña'}</label>
                 <input required={!form.id} type="password" placeholder={form.id ? "Dejar en blanco para mantener" : "Mínimo 6 caracteres"} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
               </div>
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
                 <label className="flex items-center cursor-pointer gap-2">
                   <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked={form.activo} onChange={e => setForm({...form, activo: e.target.checked})} />
                   <span className="text-sm font-bold text-gray-700">Cuenta Autorizada para Acceso</span>
+                </label>
+                <label className="flex items-center cursor-pointer gap-2">
+                  <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked={!!form.recibe_notificaciones_revision} onChange={e => setForm({...form, recibe_notificaciones_revision: e.target.checked})} />
+                  <span className="text-sm font-bold text-gray-700 flex items-center gap-1"><Bell size={14}/> Recibe notificaciones de revisión</span>
                 </label>
               </div>
               <div className="pt-4 flex gap-3">
