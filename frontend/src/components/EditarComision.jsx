@@ -11,10 +11,14 @@ const EditarComision = () => {
   const [catalogoPersonal, setCatalogoPersonal] = useState([]);
   const [catalogoVehiculos, setCatalogoVehiculos] = useState([]);
   const [catalogoClaves, setCatalogoClaves] = useState([]);
+  const [catalogoPresupuestales, setCatalogoPresupuestales] = useState([]);
 
   const [uiTransporte, setUiTransporte] = useState('Vehículo');
   const [clavesSeleccionadas, setClavesSeleccionadas] = useState([]);
   const [claveTemporal, setClaveTemporal] = useState("");
+  const [partidasSeleccionadas, setPartidasSeleccionadas] = useState([]);
+  const [partidaTemporal, setPartidaTemporal] = useState('');
+  const [montoTemporal, setMontoTemporal] = useState('');
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [showModalCuota, setShowModalCuota] = useState(false);
@@ -49,16 +53,18 @@ const EditarComision = () => {
   useEffect(() => {
     const fetchAllData = async () => {
         try {
-            const [resPersonal, resVehiculos, resClaves, resOrden] = await Promise.all([
+            const [resPersonal, resVehiculos, resClaves, resPresupuestales, resOrden] = await Promise.all([
                 fetch('/api/personal'),
                 fetch('/api/vehiculos'),
                 fetch('/api/claves-programaticas'),
+                fetch('/api/claves-presupuestales'),
                 fetch(`/api/ordenes/${id}`)
             ]);
 
             if (resPersonal.ok) setCatalogoPersonal(await resPersonal.json());
             if (resVehiculos.ok) setCatalogoVehiculos(await resVehiculos.json());
             if (resClaves.ok) setCatalogoClaves(await resClaves.json());
+            if (resPresupuestales.ok) setCatalogoPresupuestales(await resPresupuestales.json());
 
             if (resOrden.ok) {
                 const orden = await resOrden.json();
@@ -90,6 +96,21 @@ const EditarComision = () => {
                     setClavesSeleccionadas(orden.clave_programatica.split(',').map(c => c.trim()).filter(Boolean));
                 }
 
+                // Cargar partidas: usar partidas_json si existe, si no reconstruir de columnas legacy
+                if (orden.partidas_json && Array.isArray(orden.partidas_json) && orden.partidas_json.length > 0) {
+                    setPartidasSeleccionadas(orden.partidas_json);
+                } else {
+                    const esIntl = String(orden.tipo_comision || '').toUpperCase().includes('INTERNACIONAL');
+                    const legacy = [];
+                    if (parseFloat(orden.importe_combustible) > 0) legacy.push({ clave: '26111', descripcion: 'Combustible', monto: parseFloat(orden.importe_combustible) });
+                    if (parseFloat(orden.importe_pasajes_aereos) > 0) legacy.push({ clave: '37111', descripcion: 'Pasajes Nacionales Aéreos', monto: parseFloat(orden.importe_pasajes_aereos) });
+                    if (parseFloat(orden.importe_pasajes) > 0) legacy.push({ clave: '37211', descripcion: 'Pasajes Nacionales Terrestres', monto: parseFloat(orden.importe_pasajes) });
+                    if (parseFloat(orden.importe_viaticos) > 0) legacy.push({ clave: esIntl ? '37602' : '37511', descripcion: esIntl ? 'Viáticos en el Extranjero' : 'Viáticos Nacionales', monto: parseFloat(orden.importe_viaticos) });
+                    if (parseFloat(orden.importe_congresos) > 0) legacy.push({ clave: '38301', descripcion: 'Congresos y Convenciones', monto: parseFloat(orden.importe_congresos) });
+                    if (parseFloat(orden.importe_otros) > 0) legacy.push({ clave: '39202', descripcion: 'Otros Imptos. y Derechos', monto: parseFloat(orden.importe_otros) });
+                    setPartidasSeleccionadas(legacy);
+                }
+
                 if (orden.medio_transporte === 'Aéreo') {
                     setUiTransporte('Aéreo');
                 } else if (orden.medio_transporte === 'Terrestre' && !orden.vehiculo_marca && !orden.vehiculo_placas) {
@@ -118,14 +139,9 @@ const EditarComision = () => {
   }, [filasFechas]);
 
   useEffect(() => {
-    const total = (parseFloat(formData.importe_combustible) || 0) + 
-                  (parseFloat(formData.importe_otros) || 0) + 
-                  (parseFloat(formData.importe_pasajes_aereos) || 0) + 
-                  (parseFloat(formData.importe_pasajes) || 0) + 
-                  (parseFloat(formData.importe_congresos) || 0) + 
-                  (parseFloat(formData.importe_viaticos) || 0);
+    const total = partidasSeleccionadas.reduce((sum, p) => sum + (parseFloat(p.monto) || 0), 0);
     setFormData(prev => ({ ...prev, importe_total: total }));
-  }, [formData.importe_combustible, formData.importe_otros, formData.importe_pasajes_aereos, formData.importe_pasajes, formData.importe_congresos, formData.importe_viaticos]);
+  }, [partidasSeleccionadas]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -151,11 +167,25 @@ const EditarComision = () => {
     if (!claveTemporal) return;
     if (!clavesSeleccionadas.includes(claveTemporal)) {
         setClavesSeleccionadas([...clavesSeleccionadas, claveTemporal]);
-        setClaveTemporal(""); 
+        setClaveTemporal("");
     }
   };
 
   const eliminarClave = (claveAEliminar) => { setClavesSeleccionadas(clavesSeleccionadas.filter(c => c !== claveAEliminar)); };
+
+  const agregarPartida = () => {
+    if (!partidaTemporal || !montoTemporal || parseFloat(montoTemporal) <= 0) return;
+    const claveObj = catalogoPresupuestales.find(c => c.clave === partidaTemporal);
+    setPartidasSeleccionadas([...partidasSeleccionadas, {
+      clave: partidaTemporal,
+      descripcion: claveObj ? claveObj.descripcion : partidaTemporal,
+      monto: parseFloat(montoTemporal)
+    }]);
+    setPartidaTemporal('');
+    setMontoTemporal('');
+  };
+
+  const eliminarPartida = (idx) => { setPartidasSeleccionadas(partidasSeleccionadas.filter((_, i) => i !== idx)); };
 
   const handleTransporteUIChange = (e) => {
     const seleccion = e.target.value;
@@ -217,10 +247,11 @@ const EditarComision = () => {
         if (formData.fecha_fin && (new Date(formData.fecha_fin).getFullYear() < 2024 || new Date(formData.fecha_fin).getFullYear() > 2050)) { Swal.fire('Error', 'Año inválido en Fecha Fin.', 'error'); return; }
     }
 
-    const datosFinales = { 
-        ...formData, 
-        clave_programatica: clavesSeleccionadas.join(', '), 
-        usuario_modificador: JSON.parse(localStorage.getItem('usuarioActivo') || '{}').nombre || 'Sistema' 
+    const datosFinales = {
+        ...formData,
+        clave_programatica: clavesSeleccionadas.join(', '),
+        partidas_json: partidasSeleccionadas,
+        usuario_modificador: JSON.parse(localStorage.getItem('usuarioActivo') || '{}').nombre || 'Sistema'
     };
 
     if (!datosFinales.fecha_inicio) datosFinales.fecha_inicio = null;
@@ -525,13 +556,46 @@ const EditarComision = () => {
                     </div>
                 )}
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pt-4 border-t border-orange-200">
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">26111 - Combustible</label><input type="number" step="0.01" name="importe_combustible" value={formData.importe_combustible} onChange={handleChange} className="w-full pl-6 p-2 border rounded" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37111 - Pasajes Aéreos</label><input type="number" step="0.01" name="importe_pasajes_aereos" value={formData.importe_pasajes_aereos} onChange={handleChange} className="w-full p-2 border rounded bg-white" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">37211 - Pasajes Terrestres</label><input type="number" step="0.01" name="importe_pasajes" value={formData.importe_pasajes} onChange={handleChange} className="w-full p-2 border rounded" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">{String(formData.tipo_comision).toUpperCase().includes("INTERNACIONAL") ? "37602 - Viáticos Extranjero" : "37511 - Viáticos"}</label><input type="number" step="0.01" name="importe_viaticos" value={formData.importe_viaticos} onChange={handleChange} className="w-full p-2 border rounded border-blue-400 bg-blue-50 focus:bg-white" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">38301 - Congresos y Conv.</label><input type="number" step="0.01" name="importe_congresos" value={formData.importe_congresos} onChange={handleChange} className="w-full p-2 border rounded bg-white" /></div>
-                    <div><label className="block text-xs font-bold text-gray-600 mb-1">39202 - Otros Impuestos</label><input type="number" step="0.01" name="importe_otros" value={formData.importe_otros} onChange={handleChange} className="w-full p-2 border rounded" /></div>
+                <div className="pt-4 border-t border-orange-200">
+                    <label className="block text-xs font-bold text-orange-800 mb-2">PARTIDAS PRESUPUESTALES</label>
+                    <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                        <select value={partidaTemporal} onChange={(e) => setPartidaTemporal(e.target.value)} className="flex-1 p-3 border border-orange-300 rounded bg-white text-gray-700 font-medium">
+                            <option value="">-- Seleccione una partida --</option>
+                            {catalogoPresupuestales.map((p, i) => (
+                                <option key={i} value={p.clave}>{p.clave} - {p.descripcion}</option>
+                            ))}
+                        </select>
+                        <input
+                            type="number" step="0.01" min="0"
+                            placeholder="Monto $"
+                            value={montoTemporal}
+                            onChange={(e) => setMontoTemporal(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), agregarPartida())}
+                            className="w-full sm:w-36 p-3 border border-orange-300 rounded bg-white text-gray-800 font-bold"
+                        />
+                        <button type="button" onClick={agregarPartida} className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 sm:py-2 rounded shadow flex justify-center items-center gap-2 font-bold transition-colors w-full sm:w-auto">
+                            <Plus size={20}/> Agregar
+                        </button>
+                    </div>
+                    {partidasSeleccionadas.length > 0 && (
+                        <div className="bg-white border border-orange-200 rounded p-3 shadow-sm space-y-2">
+                            {partidasSeleccionadas.map((partida, idx) => (
+                                <div key={idx} className="flex items-center bg-orange-50 p-2 rounded border border-orange-100 gap-2">
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-xs font-bold text-orange-700">{partida.clave}</span>
+                                        <span className="text-sm text-gray-700 ml-2 leading-tight">{partida.descripcion}</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-blue-900 whitespace-nowrap">
+                                        {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(partida.monto)}
+                                    </span>
+                                    <button type="button" onClick={() => eliminarPartida(idx)} className="text-red-500 hover:text-red-700 p-1 flex-shrink-0"><Trash2 size={18}/></button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {partidasSeleccionadas.length === 0 && (
+                        <p className="text-xs text-gray-400 italic text-center py-2">No hay partidas agregadas aún.</p>
+                    )}
                 </div>
 
                 <div className="mt-6 p-4 bg-orange-100 rounded border border-orange-300 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left gap-2 sm:gap-0">

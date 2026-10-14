@@ -232,12 +232,22 @@ const Plantilla4Firmas = ({ data, autoridades = [] }) => {
             <View style={{ width: '100%', padding: 2, display: 'flex', flexDirection: 'column' }}>
               <View style={{ width: '50%' }}>
                 <View><Text style={{ fontSize: 7 }}><Text style={{ fontWeight: 'bold' }}>CLAVE PROGRAMÁTICA: </Text>{clavesFormateadas}</Text></View>
-                {parseFloat(data.importe_combustible) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>26111.- COMBUSTIBLE</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_combustible, data.moneda)}</Text></View></View>}
-                {parseFloat(data.importe_pasajes_aereos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>37111.- PASAJES NACIONALES AÉREOS</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_pasajes_aereos, data.moneda)}</Text></View></View>}
-                {parseFloat(data.importe_pasajes) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>37211.- PASAJES NACIONALES TERRESTRES</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_pasajes, data.moneda)}</Text></View></View>}
-                {parseFloat(data.importe_viaticos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>37602.- VIÁTICOS EN EL EXTRANJERO</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_viaticos, data.moneda)}</Text></View></View>}
-                {parseFloat(data.importe_congresos) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>38301.- CONGRESOS Y CONVENCIONES</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_congresos, data.moneda)}</Text></View></View>}
-                {parseFloat(data.importe_otros) > 0 && <View style={styles.gastosRow}><View style={styles.colGastoDesc}><Text>39202.- OTROS IMPTOS. Y DERECHOS</Text></View><View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(data.importe_otros, data.moneda)}</Text></View></View>}
+                {(data.partidas_json && Array.isArray(data.partidas_json) && data.partidas_json.length > 0
+                  ? data.partidas_json
+                  : [
+                      ...(parseFloat(data.importe_combustible) > 0 ? [{ clave: '26111', descripcion: 'COMBUSTIBLE', monto: data.importe_combustible }] : []),
+                      ...(parseFloat(data.importe_pasajes_aereos) > 0 ? [{ clave: '37111', descripcion: 'PASAJES NACIONALES AÉREOS', monto: data.importe_pasajes_aereos }] : []),
+                      ...(parseFloat(data.importe_pasajes) > 0 ? [{ clave: '37211', descripcion: 'PASAJES NACIONALES TERRESTRES', monto: data.importe_pasajes }] : []),
+                      ...(parseFloat(data.importe_viaticos) > 0 ? [{ clave: '37602', descripcion: 'VIÁTICOS EN EL EXTRANJERO', monto: data.importe_viaticos }] : []),
+                      ...(parseFloat(data.importe_congresos) > 0 ? [{ clave: '38301', descripcion: 'CONGRESOS Y CONVENCIONES', monto: data.importe_congresos }] : []),
+                      ...(parseFloat(data.importe_otros) > 0 ? [{ clave: '39202', descripcion: 'OTROS IMPTOS. Y DERECHOS', monto: data.importe_otros }] : []),
+                    ]
+                ).map((p, idx) => (
+                  <View key={idx} style={styles.gastosRow}>
+                    <View style={styles.colGastoDesc}><Text>{p.clave}.- {String(p.descripcion).toUpperCase()}</Text></View>
+                    <View style={styles.colGastoMonto}><Text style={{ fontWeight: 'bold' }}>{money(p.monto, data.moneda)}</Text></View>
+                  </View>
+                ))}
               </View>
               <View style={{ flex: 1 }} />
               <View style={{ flexDirection: 'row', width: '50%', borderTopWidth: 1, borderTopStyle: 'dashed', borderColor: '#000', marginTop: 1, paddingTop: 1 }}>
